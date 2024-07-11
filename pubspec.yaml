@@ -1,0 +1,61 @@
+name: zazam
+description: A new Flutter project with a space shooter game.
+
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: '>=2.19.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flame: ^1.18.0
+  flame_audio: ^2.0.5
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^2.0.0
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    # Player
+    - assets/images/player.png
+    
+    # Enemies
+    - assets/images/basic_enemy.png
+    - assets/images/fast_enemy.png
+    - assets/images/tough_enemy.png
+    - assets/images/boss_enemy.png
+    
+    # Projectiles
+    - assets/images/bullet.png
+    - assets/images/enemy_bullet.png
+    
+    # Power-ups
+    - assets/images/powerup_extraLife.png
+    - assets/images/powerup_rapidFire.png
+    - assets/images/powerup_shield.png
+    
+    # Background
+    - assets/images/background/stars_far.png
+    - assets/images/background/stars_middle.png
+    - assets/images/background/stars_close.png
+    - assets/images/button_bg.png
+    
+    # Audio
+    - assets/audio/laser.mp3
+    - assets/audio/explosion.mp3
+    - assets/audio/powerup.mp3
+    - assets/audio/enemy_laser.mp3
+    - assets/audio/player_hit.mp3
+    - assets/audio/background_music.mp3
+
+  fonts:
+    - family: SpaceFont
+      fonts:
+        - asset: fonts/SpaceFont.ttf
