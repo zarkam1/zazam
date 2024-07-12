@@ -6,6 +6,8 @@ import 'bullets.dart';
 class Player extends SpriteAnimationComponent
     with HasGameRef<SpaceShooterGame>, CollisionCallbacks {
   Player() : super(size: Vector2(60, 80));
+
+  bool isShooting = false;
   double shootCooldown = 0;
   static const shootInterval = 0.5;
   int health = 3;
@@ -32,7 +34,10 @@ class Player extends SpriteAnimationComponent
   void update(double dt) {
     super.update(dt);
     shootCooldown -= dt;
-     if (speedBoostTimeLeft > 0) {
+     if (shootCooldown <= 0) {
+      isShooting = false;
+    }
+    if (speedBoostTimeLeft > 0) {
       speedBoostTimeLeft -= dt;
       if (speedBoostTimeLeft <= 0) {
         speedMultiplier = 1.0;
@@ -49,10 +54,12 @@ class Player extends SpriteAnimationComponent
   }
 
   void shoot() {
-    if (shootCooldown <= 0) {
+    if (shootCooldown <= 0 && !isShooting) {
+      isShooting = true;
       gameRef.add(Bullet(position: position.clone() + Vector2(0, -height / 2)));
       gameRef.playSfx('laser.mp3');
       shootCooldown = shootInterval;
+      print('Player shot a bullet. Cooldown: $shootCooldown');
     }
   }
 

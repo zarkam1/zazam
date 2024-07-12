@@ -40,6 +40,7 @@ flutter:
     - assets/images/powerup_extraLife.png
     - assets/images/powerup_rapidFire.png
     - assets/images/powerup_shield.png
+    - assets/images/powerup_speedBoost.png
     
     # Background
     - assets/images/background/stars_far.png
@@ -54,6 +55,7 @@ flutter:
     - assets/audio/enemy_laser.mp3
     - assets/audio/player_hit.mp3
     - assets/audio/background_music.mp3
+    - assets/audio/game_over.mp3
 
   fonts:
     - family: SpaceFont

@@ -9,7 +9,7 @@ abstract class Enemy extends SpriteAnimationComponent with HasGameRef<SpaceShoot
   int scoreValue;
   double shootInterval;
   double shootCooldown = 0;
-
+  bool hasPassedScreen = false;
   Enemy({
     required this.speed,
     required this.health,
@@ -24,12 +24,18 @@ abstract class Enemy extends SpriteAnimationComponent with HasGameRef<SpaceShoot
     add(RectangleHitbox()..collisionType = CollisionType.passive);
   }
 
-  @override
+ @override
   void update(double dt) {
     super.update(dt);
     position.y += speed * dt;
-    if (position.y > gameRef.size.y) {
+    if (position.y > gameRef.size.y && !hasPassedScreen) {
+      hasPassedScreen = true;
+      gameRef.enemyPassed();
+      print('Enemy passed at ${position.y}');
+    }
+    if (position.y > gameRef.size.y + size.y) {
       removeFromParent();
+      print('Enemy removed at ${position.y}');
     }
     shootCooldown -= dt;
     if (shootCooldown <= 0) {
@@ -38,10 +44,14 @@ abstract class Enemy extends SpriteAnimationComponent with HasGameRef<SpaceShoot
     }
   }
 
-  void shoot() {
-    gameRef.add(EnemyBullet(position: position.clone() + Vector2(0, height / 2)));
+void shoot() {
+  gameRef.add(EnemyBullet(position: position.clone() + Vector2(0, height / 2)));
+  try {
     gameRef.playSfx('enemy_laser.mp3');
+  } catch (e) {
+    print('Error playing sound: $e');
   }
+}
 
   @override
   void onCollision(Set<Vector2> intersectionPoints, PositionComponent other) {
