@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'dart:async' as dart_async;
 import 'package:flame/events.dart';
 import 'package:flame/game.dart';
 import 'package:flame/components.dart';
@@ -10,10 +11,11 @@ import 'player.dart';
 import 'enemies.dart';
 import 'bullets.dart';
 import 'input_handler.dart';
+import 'powerup.dart';
 
 enum GameState { menu, playing, gameOver }
 
-class SpaceShooterGame extends FlameGame with HasCollisionDetection, KeyboardEvents {
+class SpaceShooterGame extends FlameGame with HasCollisionDetection, KeyboardEvents, TapDetector {
   late Player player;
   JoystickComponent? joystick;
   ButtonComponent? shootButton;
@@ -21,7 +23,8 @@ class SpaceShooterGame extends FlameGame with HasCollisionDetection, KeyboardEve
   int score = 0;
   GameState state = GameState.menu;
   Random random = Random();
-  
+  dart_async.Timer? powerUpTimer;
+
   @override
   Future<void> onLoad() async {
     await super.onLoad();
@@ -77,6 +80,13 @@ class SpaceShooterGame extends FlameGame with HasCollisionDetection, KeyboardEve
     }
   }
 
+  void spawnPowerUp() {
+    final powerUp = SpeedBoost(
+      position: Vector2(random.nextDouble() * size.x, 0),
+    );
+    add(powerUp);
+  }
+
   void _handlePlayerMovement(double dt) {
     Vector2 movement = Vector2.zero();
     
@@ -124,6 +134,9 @@ class SpaceShooterGame extends FlameGame with HasCollisionDetection, KeyboardEve
       anchor: Anchor.center,
     );
     add(shootButton!);
+
+    // Start spawning power-ups
+    powerUpTimer = dart_async.Timer.periodic(const Duration(seconds: 10), (_) => spawnPowerUp());
   }
 
   void gameOver() {
@@ -135,6 +148,7 @@ class SpaceShooterGame extends FlameGame with HasCollisionDetection, KeyboardEve
     joystick = null;
     shootButton?.removeFromParent();
     shootButton = null;
+    powerUpTimer?.cancel();
     add(GameOverComponent(score: score));
   }
 
@@ -176,14 +190,22 @@ class SpaceShooterGame extends FlameGame with HasCollisionDetection, KeyboardEve
 
     return KeyEventResult.handled;
   }
+
+  @override
+  void onTapDown(TapDownInfo event) {
+    if (state == GameState.menu) {
+      startGame();
+    }
+  }
 }
 
 class MenuComponent extends PositionComponent with HasGameRef<SpaceShooterGame>, TapCallbacks {
-  late ButtonComponent startButton;
+  late TextComponent titleText;
+  late TextComponent startText;
 
   @override
   Future<void> onLoad() async {
-    final titleText = TextComponent(
+    titleText = TextComponent(
       text: 'Space Shooter',
       textRenderer: TextPaint(
         style: const TextStyle(fontSize: 48, color: Colors.white, fontFamily: 'SpaceFont'),
@@ -193,24 +215,13 @@ class MenuComponent extends PositionComponent with HasGameRef<SpaceShooterGame>,
     titleText.anchor = Anchor.center;
     add(titleText);
 
-    startButton = ButtonComponent(
-      button: RectangleComponent(
-        size: Vector2(200, 50),
-        paint: Paint()..color = Colors.blue,
-      ),
-      onPressed: () => gameRef.startGame(),
-      position: Vector2(gameRef.size.x / 2, gameRef.size.y * 2 / 3),
-      anchor: Anchor.center,
-    );
-    add(startButton);
-
-    final startText = TextComponent(
-      text: 'Start Game',
+    startText = TextComponent(
+      text: 'Tap to Start',
       textRenderer: TextPaint(
         style: const TextStyle(fontSize: 24, color: Colors.white, fontFamily: 'SpaceFont'),
       ),
     );
-    startText.position = startButton.position;
+    startText.position = Vector2(gameRef.size.x / 2, gameRef.size.y * 2 / 3);
     startText.anchor = Anchor.center;
     add(startText);
   }
@@ -218,13 +229,15 @@ class MenuComponent extends PositionComponent with HasGameRef<SpaceShooterGame>,
 
 class GameOverComponent extends PositionComponent with HasGameRef<SpaceShooterGame>, TapCallbacks {
   final int score;
-  late ButtonComponent restartButton;
+  late TextComponent gameOverText;
+  late TextComponent scoreText;
+  late TextComponent restartText;
 
   GameOverComponent({required this.score});
 
   @override
   Future<void> onLoad() async {
-    final gameOverText = TextComponent(
+    gameOverText = TextComponent(
       text: 'Game Over',
       textRenderer: TextPaint(
         style: const TextStyle(fontSize: 48, color: Colors.white, fontFamily: 'SpaceFont'),
@@ -234,7 +247,7 @@ class GameOverComponent extends PositionComponent with HasGameRef<SpaceShooterGa
     gameOverText.anchor = Anchor.center;
     add(gameOverText);
 
-    final scoreText = TextComponent(
+    scoreText = TextComponent(
       text: 'Score: $score',
       textRenderer: TextPaint(
         style: const TextStyle(fontSize: 24, color: Colors.white, fontFamily: 'SpaceFont'),
@@ -244,25 +257,19 @@ class GameOverComponent extends PositionComponent with HasGameRef<SpaceShooterGa
     scoreText.anchor = Anchor.center;
     add(scoreText);
 
-    restartButton = ButtonComponent(
-      button: RectangleComponent(
-        size: Vector2(200, 50),
-        paint: Paint()..color = Colors.blue,
-      ),
-      onPressed: () => gameRef.resetGame(),
-      position: Vector2(gameRef.size.x / 2, gameRef.size.y * 2 / 3),
-      anchor: Anchor.center,
-    );
-    add(restartButton);
-
-    final restartText = TextComponent(
-      text: 'Restart',
+    restartText = TextComponent(
+      text: 'Tap to Restart',
       textRenderer: TextPaint(
         style: const TextStyle(fontSize: 24, color: Colors.white, fontFamily: 'SpaceFont'),
       ),
     );
-    restartText.position = restartButton.position;
+    restartText.position = Vector2(gameRef.size.x / 2, gameRef.size.y * 2 / 3);
     restartText.anchor = Anchor.center;
     add(restartText);
   }
+
+@override
+void onTapDown(TapDownEvent event) {
+  gameRef.resetGame();
+}
 }

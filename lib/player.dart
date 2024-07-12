@@ -3,13 +3,15 @@ import 'package:flame/collisions.dart';
 import 'space_shooter_game.dart';
 import 'bullets.dart';
 
-class Player extends SpriteAnimationComponent with HasGameRef<SpaceShooterGame>, CollisionCallbacks {
+class Player extends SpriteAnimationComponent
+    with HasGameRef<SpaceShooterGame>, CollisionCallbacks {
   Player() : super(size: Vector2(60, 80));
   double shootCooldown = 0;
   static const shootInterval = 0.5;
   int health = 3;
   static const speed = 300.0;
-
+  double speedMultiplier = 1.0;
+  double speedBoostTimeLeft = 0.0;
   @override
   Future<void> onLoad() async {
     await super.onLoad();
@@ -30,6 +32,12 @@ class Player extends SpriteAnimationComponent with HasGameRef<SpaceShooterGame>,
   void update(double dt) {
     super.update(dt);
     shootCooldown -= dt;
+     if (speedBoostTimeLeft > 0) {
+      speedBoostTimeLeft -= dt;
+      if (speedBoostTimeLeft <= 0) {
+        speedMultiplier = 1.0;
+      }
+    }
   }
 
   void move(Vector2 movement) {
@@ -46,6 +54,11 @@ class Player extends SpriteAnimationComponent with HasGameRef<SpaceShooterGame>,
       gameRef.playSfx('laser.mp3');
       shootCooldown = shootInterval;
     }
+  }
+
+  void applySpeedBoost(double duration) {
+    speedMultiplier = 2.0;
+    speedBoostTimeLeft = duration;
   }
 
   @override
