@@ -58,6 +58,7 @@ flutter:
     - assets/audio/player_hit.mp3
     - assets/audio/background_music.mp3
     - assets/audio/game_over.mp3
+    - assets/audio/shield_hit.mp3
 
   fonts:
     - family: SpaceFont

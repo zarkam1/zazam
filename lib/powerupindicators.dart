@@ -36,12 +36,12 @@ class PowerUpIndicator extends PositionComponent {
   PowerUpIndicator(this.powerUpName, Vector2 position, {super.size}) : super(position: position) {
     background = RectangleComponent(
       size: Vector2(size.x, size.y * 0.7),
-      paint: Paint()..color = Colors.grey,
+      paint: Paint()..color = const Color.fromARGB(255, 5, 5, 5),
     );
 
     bar = RectangleComponent(
       size: Vector2(0, size.y * 0.7),
-      paint: Paint()..color = Colors.blue,
+      paint: Paint()..color = Color.fromARGB(255, 196, 13, 13),
     );
 
     label = TextComponent(

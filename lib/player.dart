@@ -8,10 +8,11 @@ class Player extends SpriteAnimationComponent
     with HasGameRef<SpaceShooterGame>, CollisionCallbacks {
   Player() : super(size: Vector2(60, 80));
 
-   bool isShooting = false;
+  bool isShooting = false;
   double shootCooldown = 0;
   static const shootInterval = 0.5;
   int health = 3;
+  static const int maxHealth = 5;
   static const speed = 300.0;
   double speedMultiplier = 1.0;
   static const speedBoostDuration = 5.0;
@@ -40,8 +41,7 @@ class Player extends SpriteAnimationComponent
     anchor = Anchor.center;
     add(RectangleHitbox()..collisionType = CollisionType.active);
 
-    // Load animated shield
-   final shieldSpriteAnimation = await gameRef.loadSpriteAnimation(
+    final shieldSpriteAnimation = await gameRef.loadSpriteAnimation(
       'shield_animation.png',
       SpriteAnimationData.sequenced(
         amount: 6,
@@ -53,17 +53,26 @@ class Player extends SpriteAnimationComponent
 
     shieldAnimation = SpriteAnimationComponent(
       animation: shieldSpriteAnimation,
-      size: Vector2(size.x * 1.2, size.y * 1.2),  // Make shield slightly larger than player
+      size: Vector2(size.x * 1.2, size.y * 1.2),
     );
     shieldAnimation.anchor = Anchor.center;
-    shieldAnimation.position = size / 2;  // Center shield on player
+    shieldAnimation.position = size / 2;
     shieldAnimation.opacity = 0;
     add(shieldAnimation);
   }
 
+  void takeDamage() {
+    health = math.max(0, health - 1);
+    if (health <= 0) {
+      gameRef.gameOver();
+    }
+  }
 
+  void resetHealth() {
+    health = 3;
+  }
 
-void resetPowerups() {
+  void resetPowerups() {
     speedMultiplier = 1.0;
     speedBoostTimeLeft = 0.0;
     rapidFireTimeLeft = 0.0;
@@ -79,7 +88,6 @@ void resetPowerups() {
       isShooting = false;
     }
     updatePowerUps(dt);
-     // Update shield visibility
     shieldAnimation.opacity = shieldTimeLeft > 0 ? 1 : 0;
   }
 
@@ -95,9 +103,6 @@ void resetPowerups() {
     }
     if (shieldTimeLeft > 0) {
       shieldTimeLeft -= dt;
-      if (shieldTimeLeft <= 0) {
-        shieldAnimation.opacity = 0;
-      }
     }
   }
 
@@ -118,7 +123,7 @@ void resetPowerups() {
     }
   }
 
- void applySpeedBoost(double duration) {
+  void applySpeedBoost(double duration) {
     speedMultiplier = 2.0;
     speedBoostTimeLeft = duration;
   }
@@ -127,25 +132,25 @@ void resetPowerups() {
     rapidFireTimeLeft = duration;
   }
 
-   void applyShield(double duration) {
+  void applyShield(double duration) {
     shieldTimeLeft = duration;
     shieldAnimation.opacity = 1;
     print('Shield activated for $duration seconds');
   }
+
   void addLife() {
-    health = math.min(health + 1, 5);  // Cap health at 5
+    health = math.min(health + 1, maxHealth);
   }
 
   @override
-   @override
   void onCollision(Set<Vector2> intersectionPoints, PositionComponent other) {
     super.onCollision(intersectionPoints, other);
     if (other is EnemyBullet) {
       if (shieldTimeLeft <= 0) {
-        health--;
+        takeDamage();
         other.removeFromParent();
         gameRef.playSfx('player_hit.mp3');
-        if (health <= 0) {  // Changed from < to <=
+        if (health <= 0) {
           removeFromParent();
           gameRef.gameOver();
         }
