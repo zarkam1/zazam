@@ -31,6 +31,7 @@ flutter:
     - assets/images/fast_enemy.png
     - assets/images/tough_enemy.png
     - assets/images/boss_enemy.png
+    - assets/images/tank_enemy.png
     
     # Projectiles
     - assets/images/bullet.png

@@ -1,5 +1,5 @@
 import 'package:flame/components.dart';
-import 'package:flame/game.dart';
+
 import 'package:flame/input.dart';
 import 'package:flutter/services.dart';
 import 'package:zazam/space_shooter_game.dart';
@@ -8,7 +8,8 @@ class InputHandler extends Component with KeyboardHandler, HasGameRef<SpaceShoot
   final Vector2 movement = Vector2.zero();
   bool isShooting = false;
 
-  @override
+  
+   @override
   bool onKeyEvent(KeyEvent event, Set<LogicalKeyboardKey> keysPressed) {
     movement.setZero();
 
@@ -24,9 +25,8 @@ class InputHandler extends Component with KeyboardHandler, HasGameRef<SpaceShoot
       isShooting = false;
     }
 
-    return true; // Return true to indicate that the event was handled
+    return true;
   }
-
   void handleJoystickInput(JoystickDirection direction) {
     movement.setZero();
 

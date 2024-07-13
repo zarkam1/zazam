@@ -1,5 +1,6 @@
 import 'package:flame/components.dart';
 import 'package:flame/parallax.dart';
+
 import 'space_shooter_game.dart';
 
 class ParallaxBackground extends ParallaxComponent<SpaceShooterGame> {
@@ -13,9 +14,10 @@ class ParallaxBackground extends ParallaxComponent<SpaceShooterGame> {
         ParallaxImageData('background/stars_far.png'),
         ParallaxImageData('background/stars_middle.png'),
         ParallaxImageData('background/stars_close.png'),
+       // ParallaxImageData('background/planets.png'),  // New layer
       ],
-      baseVelocity: Vector2(0, 50),
-      velocityMultiplierDelta: Vector2(0, 1.5),
+      baseVelocity: Vector2(0, 20),
+      velocityMultiplierDelta: Vector2(0, 1.8),
     );
   }
 }

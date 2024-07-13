@@ -1,10 +1,11 @@
 import 'package:flame/components.dart';
 import 'package:flame/collisions.dart';
+import 'game_reference.dart';
 import 'space_shooter_game.dart';
 import 'bullets.dart';
 
-abstract class Enemy extends SpriteAnimationComponent with HasGameRef<SpaceShooterGame>, CollisionCallbacks {
-  double speed;
+abstract class Enemy extends SpriteAnimationComponent with HasGameRef<SpaceShooterGame>, 
+CollisionCallbacks, GameRef {  double speed;
   int health;
   int scoreValue;
   double shootInterval;
@@ -30,7 +31,7 @@ abstract class Enemy extends SpriteAnimationComponent with HasGameRef<SpaceShoot
     position.y += speed * dt;
     if (position.y > gameRef.size.y && !hasPassedScreen) {
       hasPassedScreen = true;
-      gameRef.enemyPassed();
+      gameState.enemyPassed();
       print('Enemy passed at ${position.y}');
     }
     if (position.y > gameRef.size.y + size.y) {
@@ -47,7 +48,7 @@ abstract class Enemy extends SpriteAnimationComponent with HasGameRef<SpaceShoot
 void shoot() {
   gameRef.add(EnemyBullet(position: position.clone() + Vector2(0, height / 2)));
   try {
-    gameRef.playSfx('enemy_laser.mp3');
+    audio.playSfx('enemy_laser.mp3');
   } catch (e) {
     print('Error playing sound: $e');
   }
@@ -61,11 +62,12 @@ void shoot() {
       other.removeFromParent();
       if (health <= 0) {
         removeFromParent();
-        gameRef.increaseScore(scoreValue);
-        gameRef.playSfx('explosion.mp3');
+        gameState.increaseScore(scoreValue);
+        audio.playSfx('explosion.mp3');
       }
     }
   }
+ 
 }
 
 class BasicEnemy extends Enemy {
@@ -84,3 +86,42 @@ class BasicEnemy extends Enemy {
     );
   }
 }
+
+// In enemies.dart
+
+class FastEnemy extends Enemy {
+  FastEnemy() : super(speed: 150, health: 1, scoreValue: 15, shootInterval: 2.5, size: Vector2(40, 40));
+
+  @override
+  Future<void> onLoad() async {
+    await super.onLoad();
+    animation = await gameRef.loadSpriteAnimation(
+      'fast_enemy.png',
+      SpriteAnimationData.sequenced(
+        amount: 5,
+        stepTime: 0.15,
+        textureSize: Vector2.all(32),
+      ),
+    );
+  }
+}
+
+class TankEnemy extends Enemy {
+  TankEnemy() : super(speed: 50, health: 3, scoreValue: 30, shootInterval: 4.0, size: Vector2(60, 60));
+
+  @override
+  Future<void> onLoad() async {
+    await super.onLoad();
+    animation = await gameRef.loadSpriteAnimation(
+      'tank_enemy.png',
+      SpriteAnimationData.sequenced(
+        amount: 6,
+        stepTime: 0.3,
+        textureSize: Vector2.all(32),
+      ),
+    );
+  }
+}
+
+// In space_shooter_game.dart, update the _spawnEnemies method:
+

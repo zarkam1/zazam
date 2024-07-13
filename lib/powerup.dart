@@ -1,9 +1,10 @@
 import 'package:flame/components.dart';
 import 'package:flame/collisions.dart';
+import 'game_reference.dart';
 import 'player.dart';
 import 'space_shooter_game.dart';
 
-abstract class PowerUp extends SpriteAnimationComponent with HasGameRef<SpaceShooterGame>, CollisionCallbacks {
+abstract class PowerUp extends SpriteAnimationComponent with HasGameRef<SpaceShooterGame>,GameRef, CollisionCallbacks {
   PowerUp({required Vector2 position, required Vector2 size})
       : super(position: position, size: size);
 
@@ -21,7 +22,7 @@ abstract class PowerUp extends SpriteAnimationComponent with HasGameRef<SpaceSho
     if (other is Player) {
       applyEffect(other);
       removeFromParent();
-      gameRef.playSfx('powerup.mp3');
+      audio.playSfx('powerup.mp3');
     }
   }
 
@@ -30,7 +31,7 @@ abstract class PowerUp extends SpriteAnimationComponent with HasGameRef<SpaceSho
     super.update(dt);
     position.y += 50 * dt;  // Move downwards
     if (position.y > gameRef.size.y) {
-      removeFromParent();
+     game.removeFromParent();
     }
   }
 }

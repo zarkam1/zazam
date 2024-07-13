@@ -1,11 +1,12 @@
 import 'package:flame/components.dart';
 import 'package:flame/collisions.dart';
 import 'dart:math' as math;
+import 'game_reference.dart';
 import 'space_shooter_game.dart';
 import 'bullets.dart';
 
 class Player extends SpriteAnimationComponent
-    with HasGameRef<SpaceShooterGame>, CollisionCallbacks {
+    with HasGameRef<SpaceShooterGame>,GameRef, CollisionCallbacks {
   Player() : super(size: Vector2(60, 80));
 
   bool isShooting = false;
@@ -28,15 +29,26 @@ class Player extends SpriteAnimationComponent
   Future<void> onLoad() async {
     await super.onLoad();
     
-    animation = await gameRef.loadSpriteAnimation(
-      'player.png',
-      SpriteAnimationData.sequenced(
-        amount: 3,
-        stepTime: 0.2,
-        textureSize: Vector2.all(32),
-      ),
-    );
+
+
+  try {
+      print('Player: onLoad started');
+      await _initializePlayer();
+      print('Player: onLoad completed');
+    } catch (e, stackTrace) {
+      print('Error in Player onLoad: $e');
+      print('Stack trace: $stackTrace');
+    }
+
+
+    position = gameRef.size / 2;
+    anchor = Anchor.center;
     
+    debugMode = true;
+
+    // ... rest of initialization ...
+ 
+    debugMode = true; 
     position = gameRef.size / 2;
     anchor = Anchor.center;
     add(RectangleHitbox()..collisionType = CollisionType.active);
@@ -60,11 +72,20 @@ class Player extends SpriteAnimationComponent
     shieldAnimation.opacity = 0;
     add(shieldAnimation);
   }
-
+    Future<void> _initializePlayer() async {
+    animation = await gameRef.loadSpriteAnimation(
+      'player.png',
+      SpriteAnimationData.sequenced(
+        amount: 3,
+        stepTime: 0.2,
+        textureSize: Vector2.all(32),
+      ),
+    );
+    }   
   void takeDamage() {
     health = math.max(0, health - 1);
     if (health <= 0) {
-      gameRef.gameOver();
+      gameState.gameOver();
     }
   }
 
@@ -79,19 +100,7 @@ class Player extends SpriteAnimationComponent
     shieldTimeLeft = 0.0;
     shieldAnimation.opacity = 0;
   }
-
-  @override
-  void update(double dt) {
-    super.update(dt);
-    shootCooldown -= dt;
-    if (shootCooldown <= 0) {
-      isShooting = false;
-    }
-    updatePowerUps(dt);
-    shieldAnimation.opacity = shieldTimeLeft > 0 ? 1 : 0;
-  }
-
-  void updatePowerUps(double dt) {
+void updatePowerUps(double dt) {
     if (speedBoostTimeLeft > 0) {
       speedBoostTimeLeft -= dt;
       if (speedBoostTimeLeft <= 0) {
@@ -105,6 +114,18 @@ class Player extends SpriteAnimationComponent
       shieldTimeLeft -= dt;
     }
   }
+  @override
+  void update(double dt) {
+    super.update(dt);
+    shootCooldown -= dt;
+    if (shootCooldown <= 0) {
+      isShooting = false;
+    }
+    updatePowerUps(dt);
+    shieldAnimation.opacity = shieldTimeLeft > 0 ? 1 : 0;
+  }
+
+  
 
   void move(Vector2 movement) {
     position += movement * speedMultiplier;
@@ -118,7 +139,7 @@ class Player extends SpriteAnimationComponent
     if (shootCooldown <= 0) {
       isShooting = true;
       gameRef.add(Bullet(position: position.clone() + Vector2(0, -height / 2)));
-      gameRef.playSfx('laser.mp3');
+      audio.playSfx('laser.mp3');
       shootCooldown = rapidFireTimeLeft > 0 ? shootInterval / 2 : shootInterval;
     }
   }
@@ -149,14 +170,14 @@ class Player extends SpriteAnimationComponent
       if (shieldTimeLeft <= 0) {
         takeDamage();
         other.removeFromParent();
-        gameRef.playSfx('player_hit.mp3');
+        audio.playSfx('player_hit.mp3');
         if (health <= 0) {
           removeFromParent();
-          gameRef.gameOver();
+          gameState.gameOver();
         }
       } else {
         other.removeFromParent();
-        gameRef.playSfx('shield_hit.mp3');
+        audio.playSfx('shield_hit.mp3');
       }
     }
   }

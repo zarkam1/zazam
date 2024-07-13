@@ -1,9 +1,10 @@
 import 'package:flame/components.dart';
 import 'package:flame/collisions.dart';
 import 'package:zazam/enemies.dart';
+import 'game_reference.dart';
 import 'space_shooter_game.dart';
 
-class Bullet extends SpriteComponent with HasGameRef<SpaceShooterGame>, CollisionCallbacks {
+class Bullet extends SpriteComponent with HasGameRef<SpaceShooterGame>, CollisionCallbacks,GameRef {
   static const speed = 500.0;
 
   Bullet({required Vector2 position}) : super(position: position, size: Vector2(10, 20));
@@ -34,7 +35,7 @@ class Bullet extends SpriteComponent with HasGameRef<SpaceShooterGame>, Collisio
   }
 }
 
-class EnemyBullet extends SpriteComponent with HasGameRef<SpaceShooterGame>, CollisionCallbacks {
+class EnemyBullet extends SpriteComponent with HasGameRef<SpaceShooterGame>,GameRef, CollisionCallbacks {
   static const speed = 300.0;
 
   EnemyBullet({required Vector2 position}) : super(position: position, size: Vector2(10, 20));
@@ -45,7 +46,7 @@ class EnemyBullet extends SpriteComponent with HasGameRef<SpaceShooterGame>, Col
     sprite = await gameRef.loadSprite('enemy_bullet.png');
     anchor = Anchor.center;
     add(RectangleHitbox()..collisionType = CollisionType.active);
-    gameRef.playSfx('enemy_laser.mp3');
+    audio.playSfx('enemy_laser.mp3');
   }
 
   @override

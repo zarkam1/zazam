@@ -1,5 +1,4 @@
 import 'package:flame/components.dart';
-import 'package:flame/palette.dart';
 import 'package:flutter/material.dart';
 import 'player.dart';
 
@@ -8,13 +7,13 @@ class PowerUpIndicators extends PositionComponent with HasGameRef {
   late PowerUpIndicator rapidFire;
   late PowerUpIndicator shield;
 
-  PowerUpIndicators() : super(position: Vector2(10, 50), size: Vector2(100, 120));
+  PowerUpIndicators() : super(position: Vector2(10, 340), size: Vector2(100, 120));
 
   @override
   Future<void> onLoad() async {
     speedBoost = PowerUpIndicator('Speed', Vector2(0, 0), size: Vector2(100, 30));
-    rapidFire = PowerUpIndicator('Rapid', Vector2(0, 40), size: Vector2(100, 30));
-    shield = PowerUpIndicator('Shield', Vector2(0, 80), size: Vector2(100, 30));
+    rapidFire = PowerUpIndicator('Rapid', Vector2(0, 50), size: Vector2(100, 30));
+    shield = PowerUpIndicator('Shield', Vector2(0, 100), size: Vector2(100, 30));
 
     await addAll([speedBoost, rapidFire, shield]);
   }
@@ -23,6 +22,12 @@ class PowerUpIndicators extends PositionComponent with HasGameRef {
     speedBoost.updateProgress(player.speedBoostTimeLeft / Player.speedBoostDuration);
     rapidFire.updateProgress(player.rapidFireTimeLeft / Player.rapidFireDuration);
     shield.updateProgress(player.shieldTimeLeft / Player.shieldDuration);
+  }
+
+  void resetIndicators() {
+    speedBoost.updateProgress(0);
+    rapidFire.updateProgress(0);
+    shield.updateProgress(0);
   }
 }
 
@@ -46,7 +51,7 @@ class PowerUpIndicator extends PositionComponent {
 
     label = TextComponent(
       text: powerUpName,
-      textRenderer: TextPaint(style: TextStyle(color: BasicPalette.white.color, fontSize: size.y * 0.3)),
+      textRenderer: TextPaint(style: TextStyle(color: Color.fromARGB(255, 214, 204, 204), fontSize: size.y * 0.7)),
     );
   }
 

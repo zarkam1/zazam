@@ -3,15 +3,33 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'space_shooter_game.dart';
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  
-  await SystemChrome.setPreferredOrientations([
-    DeviceOrientation.portraitUp,
-    DeviceOrientation.portraitDown,
-  ]);
-
-  runApp(const MyApp());
+void main() {
+  runApp(
+    MaterialApp(
+      home: Scaffold(
+        body: GameWidget<SpaceShooterGame>(
+          game: SpaceShooterGame(),
+          initialActiveOverlays: const ['initial_overlay'],
+          overlayBuilderMap: {
+            'initial_overlay': (_, SpaceShooterGame game) {
+              return const Center(
+                child: Text('Loading...', style: TextStyle(color: Colors.white, fontSize: 24)),
+              );
+            },
+          },
+          loadingBuilder: (context) => const Center(
+            child: CircularProgressIndicator(),
+          ),
+          errorBuilder: (context, ex) {
+            print('Error during game initialization: $ex');
+            return Center(
+              child: Text('Error: ${ex.toString()}', style: TextStyle(color: Colors.red, fontSize: 24)),
+            );
+          },
+        ),
+      ),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
