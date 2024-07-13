@@ -37,9 +37,7 @@ class Bullet extends SpriteComponent with HasGameRef<SpaceShooterGame>, Collisio
 class EnemyBullet extends SpriteComponent with HasGameRef<SpaceShooterGame>, CollisionCallbacks {
   static const speed = 300.0;
 
-  EnemyBullet({required Vector2 position}) : super(position: position, size: Vector2(10, 20)){
-     print('EnemyBullet created at $position');  
-  }
+  EnemyBullet({required Vector2 position}) : super(position: position, size: Vector2(10, 20));
 
   @override
   Future<void> onLoad() async {
@@ -47,7 +45,7 @@ class EnemyBullet extends SpriteComponent with HasGameRef<SpaceShooterGame>, Col
     sprite = await gameRef.loadSprite('enemy_bullet.png');
     anchor = Anchor.center;
     add(RectangleHitbox()..collisionType = CollisionType.active);
-    gameRef.playSfx('enemy_laser.mp3');  // Play sound when bullet is created
+    gameRef.playSfx('enemy_laser.mp3');
   }
 
   @override
@@ -56,15 +54,12 @@ class EnemyBullet extends SpriteComponent with HasGameRef<SpaceShooterGame>, Col
     position.y += speed * dt;
     if (position.y > gameRef.size.y) {
       removeFromParent();
-      print('EnemyBullet removed at ${position.y}');
     }
   }
 
   @override
   void onRemove() {
     super.onRemove();
-    // If there's a way to stop the specific sound for this bullet, do it here
-    // For now, we'll rely on the sound finishing naturally
-    print('EnemyBullet removed and sound should stop');
+    // Removed sound stop code as it's not necessary
   }
 }

@@ -9,7 +9,6 @@ class InputHandler extends Component with KeyboardHandler, HasGameRef<SpaceShoot
   bool isShooting = false;
 
   @override
-  // ignore: deprecated_member_use
   bool onKeyEvent(KeyEvent event, Set<LogicalKeyboardKey> keysPressed) {
     movement.setZero();
 
@@ -18,9 +17,14 @@ class InputHandler extends Component with KeyboardHandler, HasGameRef<SpaceShoot
     if (keysPressed.contains(LogicalKeyboardKey.arrowUp)) movement.y -= 1;
     if (keysPressed.contains(LogicalKeyboardKey.arrowDown)) movement.y += 1;
     
-    isShooting = keysPressed.contains(LogicalKeyboardKey.space);
+    // Set isShooting to true only on KeyDownEvent for space key
+    if (event is KeyDownEvent && event.logicalKey == LogicalKeyboardKey.space) {
+      isShooting = true;
+    } else if (event is KeyUpEvent && event.logicalKey == LogicalKeyboardKey.space) {
+      isShooting = false;
+    }
 
-    return true;
+    return true; // Return true to indicate that the event was handled
   }
 
   void handleJoystickInput(JoystickDirection direction) {

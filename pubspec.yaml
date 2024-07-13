@@ -41,6 +41,8 @@ flutter:
     - assets/images/powerup_rapidFire.png
     - assets/images/powerup_shield.png
     - assets/images/powerup_speedBoost.png
+    - assets/images/shield.png
+    - assets/images/shield_animation.png
     
     # Background
     - assets/images/background/stars_far.png
