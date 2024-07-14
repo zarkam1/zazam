@@ -45,16 +45,16 @@ class StyledButton extends PositionComponent with TapCallbacks {
   @override
   void onTapDown(TapDownEvent event) {
     background.paint.color = Colors.blueAccent;
-  }
-
-  @override
-  void onTapUp(TapUpEvent event) {
-    background.paint.color = Colors.blue;
     onPressed();
   }
 
   @override
+  void onTapUp(TapUpEvent event) {
+    background.paint.color = Color.fromARGB(255, 18, 18, 19);
+  }
+
+  @override
   void onTapCancel(TapCancelEvent event) {
-    background.paint.color = Colors.blue;
+    background.paint.color = Color.fromARGB(255, 18, 18, 19);
   }
 }

@@ -1,8 +1,9 @@
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
 import 'player.dart';
+import 'space_shooter_game.dart';
 
-class PowerUpIndicators extends PositionComponent with HasGameRef {
+class PowerUpIndicators extends PositionComponent with HasGameRef<SpaceShooterGame> {
   late PowerUpIndicator speedBoost;
   late PowerUpIndicator rapidFire;
   late PowerUpIndicator shield;
@@ -18,6 +19,15 @@ class PowerUpIndicators extends PositionComponent with HasGameRef {
     await addAll([speedBoost, rapidFire, shield]);
   }
 
+  @override
+  void render(Canvas canvas) {
+    final opacity = gameRef.gameStateManager.state == GameState.playing ? 1.0 : 0.0;
+    speedBoost.setOpacity(opacity);
+    rapidFire.setOpacity(opacity);
+    shield.setOpacity(opacity);
+    super.render(canvas);
+  }
+
   void updateIndicators(Player player) {
     speedBoost.updateProgress(player.speedBoostTimeLeft / Player.speedBoostDuration);
     rapidFire.updateProgress(player.rapidFireTimeLeft / Player.rapidFireDuration);
@@ -30,8 +40,7 @@ class PowerUpIndicators extends PositionComponent with HasGameRef {
     shield.updateProgress(0);
   }
 }
-
-class PowerUpIndicator extends PositionComponent {
+class PowerUpIndicator extends PositionComponent with HasGameRef<SpaceShooterGame> {
   final String powerUpName;
   late RectangleComponent background;
   late RectangleComponent bar;
@@ -64,5 +73,21 @@ class PowerUpIndicator extends PositionComponent {
   void updateProgress(double progress) {
     _progress = progress.clamp(0.0, 1.0);
     bar.size.x = size.x * _progress;
+  }
+
+  void setOpacity(double opacity) {
+    background.paint.color = background.paint.color.withOpacity(opacity);
+    bar.paint.color = bar.paint.color.withOpacity(opacity);
+    
+    // Update the label's text color opacity
+    if (label.textRenderer is TextPaint) {
+      final TextPaint textPaint = label.textRenderer as TextPaint;
+      final TextStyle currentStyle = textPaint.style;
+      label.textRenderer = TextPaint(
+        style: currentStyle.copyWith(
+          color: currentStyle.color?.withOpacity(opacity),
+        ),
+      );
+    }
   }
 }

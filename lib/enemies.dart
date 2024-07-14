@@ -1,11 +1,15 @@
 import 'package:flame/components.dart';
 import 'package:flame/collisions.dart';
 import 'game_reference.dart';
+import 'player.dart';
 import 'space_shooter_game.dart';
 import 'bullets.dart';
 
-abstract class Enemy extends SpriteAnimationComponent with HasGameRef<SpaceShooterGame>, 
-CollisionCallbacks, GameRef {  double speed;
+abstract class Enemy extends SpriteAnimationComponent
+    with HasGameRef<SpaceShooterGame>, CollisionCallbacks, GameRef {
+  double speed;
+
+  bool countsAsPassed = false; //
   int health;
   int scoreValue;
   double shootInterval;
@@ -25,14 +29,16 @@ CollisionCallbacks, GameRef {  double speed;
     add(RectangleHitbox()..collisionType = CollisionType.passive);
   }
 
- @override
-  void update(double dt) {
+   void update(double dt) {
+    if (gameRef.gameStateManager.state != GameState.playing) return;
     super.update(dt);
     position.y += speed * dt;
     if (position.y > gameRef.size.y && !hasPassedScreen) {
       hasPassedScreen = true;
-      gameState.enemyPassed();
-      print('Enemy passed at ${position.y}');
+      if (countsAsPassed) {
+        gameState.enemyPassed();
+        print('Enemy passed at ${position.y}');
+      }
     }
     if (position.y > gameRef.size.y + size.y) {
       removeFromParent();
@@ -45,33 +51,54 @@ CollisionCallbacks, GameRef {  double speed;
     }
   }
 
-void shoot() {
-  gameRef.add(EnemyBullet(position: position.clone() + Vector2(0, height / 2)));
-  try {
-    audio.playSfx('enemy_laser.mp3');
-  } catch (e) {
-    print('Error playing sound: $e');
+  @override
+  void onRemove() {
+    super.onRemove();
+    print('Enemy onRemove called');
   }
-}
+
+
+
+  void shoot() {
+    gameRef
+        .add(EnemyBullet(position: position.clone() + Vector2(0, height / 2)));
+    try {
+      audio.playSfx('enemy_laser.mp3');
+    } catch (e) {
+      print('Error playing sound: $e');
+    }
+  }
+ void takeDamage(int damage) {
+    health -= damage;
+    if (health <= 0) {
+      removeFromParent();
+      gameState.increaseScore(scoreValue);
+      audio.playSfx('explosion.mp3');
+    }
+  }
 
   @override
   void onCollision(Set<Vector2> intersectionPoints, PositionComponent other) {
     super.onCollision(intersectionPoints, other);
     if (other is Bullet) {
-      health--;
+      takeDamage(1);
       other.removeFromParent();
-      if (health <= 0) {
+    } else if (other is Player) {
+      if (!(this is TankEnemy)) {
         removeFromParent();
-        gameState.increaseScore(scoreValue);
-        audio.playSfx('explosion.mp3');
       }
     }
   }
- 
 }
 
 class BasicEnemy extends Enemy {
-  BasicEnemy() : super(speed: 100, health: 1, scoreValue: 10, shootInterval: 3.0, size: Vector2(50, 50));
+  BasicEnemy()
+      : super(
+            speed: 100,
+            health: 1,
+            scoreValue: 10,
+            shootInterval: 3.0,
+            size: Vector2(50, 50));
 
   @override
   Future<void> onLoad() async {
@@ -90,7 +117,13 @@ class BasicEnemy extends Enemy {
 // In enemies.dart
 
 class FastEnemy extends Enemy {
-  FastEnemy() : super(speed: 150, health: 1, scoreValue: 15, shootInterval: 2.5, size: Vector2(40, 40));
+  FastEnemy()
+      : super(
+            speed: 150,
+            health: 1,
+            scoreValue: 15,
+            shootInterval: 2.5,
+            size: Vector2(40, 40));
 
   @override
   Future<void> onLoad() async {
@@ -107,8 +140,15 @@ class FastEnemy extends Enemy {
 }
 
 class TankEnemy extends Enemy {
-  TankEnemy() : super(speed: 50, health: 3, scoreValue: 30, shootInterval: 4.0, size: Vector2(60, 60));
+  TankEnemy()
+      : super(
+            speed: 50,
+            health: 3,
+            scoreValue: 30,
+            shootInterval: 4.0,
+            size: Vector2(60, 60));
 
+ bool   countsAsPassed = true;  
   @override
   Future<void> onLoad() async {
     await super.onLoad();

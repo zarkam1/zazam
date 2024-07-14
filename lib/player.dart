@@ -1,6 +1,7 @@
 import 'package:flame/components.dart';
 import 'package:flame/collisions.dart';
 import 'dart:math' as math;
+import 'enemies.dart';
 import 'game_reference.dart';
 import 'space_shooter_game.dart';
 import 'bullets.dart';
@@ -44,11 +45,11 @@ class Player extends SpriteAnimationComponent
     position = gameRef.size / 2;
     anchor = Anchor.center;
     
-    debugMode = true;
+    
 
     // ... rest of initialization ...
  
-    debugMode = true; 
+    //debugMode = true; 
     position = gameRef.size / 2;
     anchor = Anchor.center;
     add(RectangleHitbox()..collisionType = CollisionType.active);
@@ -82,9 +83,11 @@ class Player extends SpriteAnimationComponent
       ),
     );
     }   
-  void takeDamage() {
+ void takeDamage() {
     health = math.max(0, health - 1);
+    gameRef.uiManager.updateHealth(health);
     if (health <= 0) {
+      removeFromParent();
       gameState.gameOver();
     }
   }
@@ -92,6 +95,15 @@ class Player extends SpriteAnimationComponent
   void resetHealth() {
     health = 3;
   }
+
+
+void reset() {
+  position = gameRef.size / 2;
+  health = 3;
+  resetPowerups();
+  shootCooldown = 0;
+  isShooting = false;
+}
 
   void resetPowerups() {
     speedMultiplier = 1.0;
@@ -163,22 +175,25 @@ void updatePowerUps(double dt) {
     health = math.min(health + 1, maxHealth);
   }
 
-  @override
+@override
   void onCollision(Set<Vector2> intersectionPoints, PositionComponent other) {
     super.onCollision(intersectionPoints, other);
-    if (other is EnemyBullet) {
+    if (other is Enemy) {
+      takeDamage();
+      if (!(other is TankEnemy)) {
+        other.takeDamage(1);
+      }
+    } else if (other is EnemyBullet) {
       if (shieldTimeLeft <= 0) {
         takeDamage();
         other.removeFromParent();
         audio.playSfx('player_hit.mp3');
-        if (health <= 0) {
-          removeFromParent();
-          gameState.gameOver();
-        }
       } else {
         other.removeFromParent();
         audio.playSfx('shield_hit.mp3');
       }
     }
   }
-}
+
+ 
+  }

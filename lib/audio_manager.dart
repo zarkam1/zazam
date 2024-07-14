@@ -1,8 +1,13 @@
+import 'package:flame/components.dart';
 import 'package:flame_audio/flame_audio.dart';
 
-class AudioManager {
+import 'space_shooter_game.dart';
+
+class AudioManager extends Component with HasGameRef<SpaceShooterGame> {
   Map<String, AudioPool> soundPools = {};
 
+
+ double _musicPlaybackRate = 1.0;
   Future<void> initialize() async {
     await FlameAudio.audioCache.loadAll([
       'background_music.mp3',
@@ -28,10 +33,15 @@ class AudioManager {
     }
   }
 
-  void playBackgroundMusic() {
-    FlameAudio.bgm.play('background_music.mp3');
+ void playBackgroundMusic() {
+    FlameAudio.bgm.play('background_music.mp3', volume: 0.5);
+    updateMusicSpeed();
   }
-
+ void updateMusicSpeed() {
+    if (!isMounted) return;  // Add this check
+  _musicPlaybackRate = 1.0 + (gameRef.gameStateManager.enemiesPassed * 0.1).clamp(0.0, 1.0);
+  FlameAudio.bgm.audioPlayer.setPlaybackRate(_musicPlaybackRate);
+}
   void stopBackgroundMusic() {
     FlameAudio.bgm.stop();
   }

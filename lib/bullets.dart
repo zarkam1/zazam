@@ -4,7 +4,7 @@ import 'package:zazam/enemies.dart';
 import 'game_reference.dart';
 import 'space_shooter_game.dart';
 
-class Bullet extends SpriteComponent with HasGameRef<SpaceShooterGame>, CollisionCallbacks,GameRef {
+class Bullet extends SpriteComponent with HasGameRef<SpaceShooterGame>, CollisionCallbacks, GameRef {
   static const speed = 500.0;
 
   Bullet({required Vector2 position}) : super(position: position, size: Vector2(10, 20));
@@ -16,7 +16,8 @@ class Bullet extends SpriteComponent with HasGameRef<SpaceShooterGame>, Collisio
     anchor = Anchor.center;
     add(RectangleHitbox()..collisionType = CollisionType.active);
   }
- @override
+
+  @override
   void onCollision(Set<Vector2> intersectionPoints, PositionComponent other) {
     super.onCollision(intersectionPoints, other);
     if (other is Enemy) {
@@ -24,18 +25,24 @@ class Bullet extends SpriteComponent with HasGameRef<SpaceShooterGame>, Collisio
       print('Bullet removed (hit enemy)');
     }
   }
+
   @override
   void update(double dt) {
+    if (gameRef.gameStateManager.state != GameState.playing) {
+      opacity = 0;
+      return;
+    }
+    opacity = 1;
     super.update(dt);
     position.y -= speed * dt;
     if (position.y < 0) {
       removeFromParent();
-          print('Bullet removed (off-screen)');
+      print('Bullet removed (off-screen)');
     }
   }
 }
 
-class EnemyBullet extends SpriteComponent with HasGameRef<SpaceShooterGame>,GameRef, CollisionCallbacks {
+class EnemyBullet extends SpriteComponent with HasGameRef<SpaceShooterGame>, GameRef, CollisionCallbacks {
   static const speed = 300.0;
 
   EnemyBullet({required Vector2 position}) : super(position: position, size: Vector2(10, 20));
@@ -51,16 +58,15 @@ class EnemyBullet extends SpriteComponent with HasGameRef<SpaceShooterGame>,Game
 
   @override
   void update(double dt) {
+    if (gameRef.gameStateManager.state != GameState.playing) {
+      opacity = 0;
+      return;
+    }
+    opacity = 1;
     super.update(dt);
     position.y += speed * dt;
     if (position.y > gameRef.size.y) {
       removeFromParent();
     }
-  }
-
-  @override
-  void onRemove() {
-    super.onRemove();
-    // Removed sound stop code as it's not necessary
   }
 }

@@ -1,5 +1,5 @@
 import 'package:flame/components.dart';
-import 'game_reference.dart';
+
 import 'space_shooter_game.dart';
 
 class GameStateManager extends Component with HasGameRef<SpaceShooterGame> {
@@ -39,44 +39,50 @@ class GameStateManager extends Component with HasGameRef<SpaceShooterGame> {
     }
   }
 
-  void startGame() {
+   void startGame() {
     print('Starting game');
     _enemiesPassed = 0;
     _enemiesSpawned = 0;
     _score = 0;
     state = GameState.playing;
-    gameRef.audioManager.playBackgroundMusic();
-    gameRef.enemyManager.reset();
+    if (isMounted) {
+      gameRef.audioManager.playBackgroundMusic();
+      gameRef.enemyManager.reset();
+      gameRef.player.reset();
+      gameRef.uiManager.reset();
+    }
     print('Game started');
   }
+
 
   void gameOver() {
   print('Game over');
   state = GameState.gameOver;
   gameRef.audioManager.stopBackgroundMusic();
   gameRef.audioManager.playSfx('game_over.mp3');
-  gameRef.pauseEngine();  // This will pause the game
+  //gameRef.pauseEngine();  // This will pause the game
    gameRef.add(GameOverComponent(score: _score));
 }
-  void resetGame() {
-  print('Resetting game');
+ void resetGame() {
+  print('GameStateManager: Resetting game');
   _enemiesPassed = 0;
   _enemiesSpawned = 0;
   _score = 0;
+  state = GameState.playing;  // Set the state before resetting the game
   gameRef.resetGame();
-  gameRef.resumeEngine();
-  state = GameState.menu;
-  print('Game reset');
+  //gameRef.audioManager.playBackgroundMusic();
+  print('GameStateManager: Game reset and started');
 }
 
-  void enemyPassed() {
-    _enemiesPassed++;
-    print('Enemy passed. Total: $_enemiesPassed');
-    gameRef.uiManager.updateEnemiesPassed(_enemiesPassed);
-    if (_enemiesPassed >= maxEnemiesPassed) {
-      gameOver();
-    }
+ void enemyPassed() {
+  _enemiesPassed++;
+  print('Enemy passed. Total: $_enemiesPassed');
+  gameRef.uiManager.updateEnemiesPassed(_enemiesPassed);
+  gameRef.audioManager.updateMusicSpeed();
+  if (_enemiesPassed >= maxEnemiesPassed) {
+    gameOver();
   }
+}
 
   void enemySpawned() {
     _enemiesSpawned++;

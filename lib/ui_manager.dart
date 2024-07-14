@@ -11,13 +11,11 @@ class UIManager extends Component with HasGameRef<SpaceShooterGame>, GameRef {
   TextComponent? enemiesPassedText;
   FpsTextComponent? fpsText;
 
-  // Flag to check if game UI has been initialized
   bool _gameUIInitialized = false;
 
   @override
   Future<void> onLoad() async {
     print('UIManager: onLoad started');
-    // Only add FPS text initially, as it's always visible
     fpsText = FpsTextComponent(
       position: Vector2(game.size.x - 50, 10),
       textRenderer: TextPaint(style: const TextStyle(color: Colors.white, fontSize: 12)),
@@ -26,7 +24,6 @@ class UIManager extends Component with HasGameRef<SpaceShooterGame>, GameRef {
     print('UIManager: onLoad finished');
   }
 
-  // New method to initialize game UI
   void initializeGameUI() {
     if (_gameUIInitialized) return;
 
@@ -70,9 +67,40 @@ class UIManager extends Component with HasGameRef<SpaceShooterGame>, GameRef {
   }
 
   @override
+  void render(Canvas canvas) {
+    final opacity = gameRef.gameStateManager.state == GameState.playing ? 1.0 : 0.0;
+    setUIOpacity(opacity);
+    super.render(canvas);
+  }
+
+  @override
   void update(double dt) {
     super.update(dt);
+    if (gameRef.gameStateManager.state == GameState.playing) {
+      updateHealth(gameRef.player.health);
+      updateScore(gameRef.gameStateManager.score);
+      updateEnemiesPassed(gameRef.gameStateManager.enemiesPassed);
+    }
     fpsText?.position = Vector2(game.size.x - 50, 10);
+  }
+
+  void setUIOpacity(double opacity) {
+    setTextComponentOpacity(healthText, opacity);
+    setTextComponentOpacity(scoreText, opacity);
+    setTextComponentOpacity(passesLeftText, opacity);
+    setTextComponentOpacity(enemiesPassedText, opacity);
+  }
+
+  void setTextComponentOpacity(TextComponent? textComponent, double opacity) {
+    if (textComponent != null && textComponent.textRenderer is TextPaint) {
+      final TextPaint textPaint = textComponent.textRenderer as TextPaint;
+      final TextStyle currentStyle = textPaint.style;
+      textComponent.textRenderer = TextPaint(
+        style: currentStyle.copyWith(
+          color: currentStyle.color?.withOpacity(opacity),
+        ),
+      );
+    }
   }
 
   void reset() {

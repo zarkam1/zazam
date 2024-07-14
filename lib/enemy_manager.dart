@@ -12,7 +12,12 @@ class EnemyManager extends Component with HasGameRef<SpaceShooterGame> {
 
   @override
   void update(double dt) {
-    if (gameRef.gameStateManager.state != GameState.playing) return;
+    if (gameRef.gameStateManager.state != GameState.playing)  {
+    // Remove all enemies and power-ups when not playing
+    gameRef.children.whereType<Enemy>().forEach((enemy) => enemy.removeFromParent());
+    gameRef.children.whereType<PowerUp>().forEach((powerUp) => powerUp.removeFromParent());
+    return;
+  }
 
     enemySpawnTimer += dt;
     if (enemySpawnTimer >= spawnInterval &&
@@ -85,5 +90,6 @@ class EnemyManager extends Component with HasGameRef<SpaceShooterGame> {
     gameRef.children
         .whereType<PowerUp>()
         .forEach((powerUp) => powerUp.removeFromParent());
+
   }
 }

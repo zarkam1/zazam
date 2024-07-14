@@ -31,6 +31,8 @@ class SpaceShooterGame extends FlameGame
   late JoystickComponent joystick;
   late HudButtonComponent shootButton;
   late PowerUpIndicators powerUpIndicators;
+  static const double joystickSensitivity = 0.5; // Adjust this value to change sensitivity
+
   @override
   Future<void> onLoad() async {
     try {
@@ -103,6 +105,7 @@ class SpaceShooterGame extends FlameGame
   }
 
   @override
+  @override
   void update(double dt) {
     super.update(dt);
     if (gameStateManager.state == GameState.menu &&
@@ -112,13 +115,13 @@ class SpaceShooterGame extends FlameGame
       player.removeFromParent();
       joystick.removeFromParent();
       shootButton.removeFromParent();
-    }
-
-   else  if (gameStateManager.state == GameState.playing) {
+      
+    } else if (gameStateManager.state == GameState.playing) {
+      children.whereType<MenuComponent>().forEach((menu) => menu.removeFromParent());
       if (!children.contains(player)) add(player);
       if (!children.contains(joystick)) add(joystick);
       if (!children.contains(shootButton)) add(shootButton);
-
+      
       enemyManager.update(dt);
       uiManager.update(dt);
       powerUpIndicators.updateIndicators(player);
@@ -127,7 +130,7 @@ class SpaceShooterGame extends FlameGame
 
       player.move(inputHandler.movement);
       // Handle joystick input
-      Vector2 joystickMovement = joystick.delta * Player.speed * dt;
+      Vector2 joystickMovement = joystick.delta * Player.speed * dt  * joystickSensitivity;
       player.move(joystickMovement);
 
       if (inputHandler.isShooting) {
@@ -145,27 +148,33 @@ class SpaceShooterGame extends FlameGame
     }
   }
 
- } void resetGame() {
-    children.whereType<Enemy>().forEach((enemy) => enemy.removeFromParent());
-    children.whereType<Bullet>().forEach((bullet) => bullet.removeFromParent());
-    children
-        .whereType<EnemyBullet>()
-        .forEach((bullet) => bullet.removeFromParent());
-    children
-        .whereType<PowerUp>()
-        .forEach((powerUp) => powerUp.removeFromParent());
-    children
-        .whereType<GameOverComponent>()
-        .forEach((component) => component.removeFromParent());
+ } 
+ 
+ 
+ void resetGame() {
+  print('SpaceShooterGame: Resetting game');
+  children.whereType<Enemy>().toList().forEach((enemy) => enemy.removeFromParent());
+  children.whereType<Bullet>().toList().forEach((bullet) => bullet.removeFromParent());
+  children.whereType<EnemyBullet>().toList().forEach((bullet) => bullet.removeFromParent());
+  children.whereType<PowerUp>().toList().forEach((powerUp) => powerUp.removeFromParent());
+  children.whereType<GameOverComponent>().toList().forEach((component) => component.removeFromParent());
+  
+  player.reset();
+  powerUpIndicators.resetIndicators();
+  enemyManager.reset();
+  uiManager.reset();
 
-    player.position = size / 2;
-    player.health = 3; // Reset player health
-    add(player);
-    powerUpIndicators.resetIndicators();
-    enemyManager.reset();
-    uiManager.reset();
-  }
+  // Remove these components
+  player.removeFromParent();
+  joystick.removeFromParent();
+  shootButton.removeFromParent();
 
+  // Add menu component
+  add(MenuComponent());
+
+  print('SpaceShooterGame: Game reset completed');
+}
+ 
   @override
   void onTapDown(TapDownInfo info) {
     if (gameStateManager.state == GameState.menu) {
@@ -276,7 +285,12 @@ class GameOverComponent extends PositionComponent with HasGameRef<SpaceShooterGa
 
     restartButton = StyledButton(
       text: 'Restart',
-      onPressed: () => gameRef.gameStateManager.resetGame(),
+      onPressed: () {
+        print('Restart button pressed');
+        if (isMounted) {
+          gameRef.gameStateManager.resetGame();
+        }
+      },
       position: Vector2(size.x / 2 - 100, size.y * 2 / 3),
       size: Vector2(200, 50),
     );
