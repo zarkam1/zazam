@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:zazam/game_reference.dart';
 import 'bullets.dart';
 import 'enemies.dart';
+import 'parallax_background.dart';
 import 'player.dart';
 import 'input_handler.dart';
 import 'game_state_manager.dart';
@@ -31,14 +32,15 @@ class SpaceShooterGame extends FlameGame
   late JoystickComponent joystick;
   late HudButtonComponent shootButton;
   late PowerUpIndicators powerUpIndicators;
-  static const double joystickSensitivity = 0.5; // Adjust this value to change sensitivity
+  static const double joystickSensitivity = 0.1; // Adjust this value to change sensitivity
 
   @override
   Future<void> onLoad() async {
     try {
       print('SpaceShooterGame: onLoad started');
       await super.onLoad();
-
+ // Add this line to load the parallax background
+    await add(ParallaxBackground());
       await images.loadAll([
         'player.png',
         'basic_enemy.png',

@@ -1,6 +1,8 @@
 import 'package:flame/components.dart';
 import 'package:flame/collisions.dart';
+import 'package:flutter/material.dart';
 import 'game_reference.dart';
+import 'particle_explosion.dart';
 import 'player.dart';
 import 'space_shooter_game.dart';
 import 'bullets.dart';
@@ -71,6 +73,7 @@ abstract class Enemy extends SpriteAnimationComponent
  void takeDamage(int damage) {
     health -= damage;
     if (health <= 0) {
+           gameRef.add(ParticleExplosion(position: position, size: size, color: Colors.red));
       removeFromParent();
       gameState.increaseScore(scoreValue);
       audio.playSfx('explosion.mp3');

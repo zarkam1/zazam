@@ -46,10 +46,16 @@ flutter:
     - assets/images/shield_animation.png
     
     # Background
-    - assets/images/background/stars_far.png
-    - assets/images/background/stars_middle.png
-    - assets/images/background/stars_close.png
+    - assets/images/background/stones_far.png
+    - assets/images/background/stones_middle.png
+    - assets/images/background/stones_close.png
+    - assets/images/background/space_stone.png
+    - assets/images/background/space_background.png
     - assets/images/button_bg.png
+    - assets/images/background/space_background.png
+    - assets/images/background/stars_small.png
+    - assets/images/background/stars_medium.png
+    - assets/images/background/stars_large.png
     
     # Audio
     - assets/audio/laser.mp3

@@ -1,9 +1,11 @@
 import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
-
+import 'package:flutter/services.dart';
 import 'space_shooter_game.dart';
 
 void main() {
+SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+  
   runApp(
     MaterialApp(
       home: Scaffold(
@@ -38,6 +40,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+       debugShowCheckedModeBanner: false,
       title: 'Space Shooter',
       theme: ThemeData(
         primarySwatch: Colors.blue,
