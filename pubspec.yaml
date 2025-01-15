@@ -44,6 +44,7 @@ flutter:
     - assets/images/powerup_speedBoost.png
     - assets/images/shield.png
     - assets/images/shield_animation.png
+    - assets/images/shield_animation_enemies.png
     
     # Background
     - assets/images/background/stones_far.png

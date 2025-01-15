@@ -6,6 +6,7 @@ import 'package:flame/palette.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:zazam/game_reference.dart';
+import 'package:zazam/starfield.dart';
 import 'bullets.dart';
 import 'enemies.dart';
 import 'parallax_background.dart';
@@ -23,7 +24,8 @@ enum GameState { menu, playing, gameOver }
 
 class SpaceShooterGame extends FlameGame
     with HasCollisionDetection, KeyboardEvents, TapDetector {
-  late Player player;
+   late Player player;
+  Starfield? starfield;
   late GameStateManager gameStateManager;
   late EnemyManager enemyManager;
   late UIManager uiManager;
@@ -40,7 +42,13 @@ class SpaceShooterGame extends FlameGame
       print('SpaceShooterGame: onLoad started');
       await super.onLoad();
  // Add this line to load the parallax background
-    await add(ParallaxBackground());
+      // Add Starfield
+
+        // Initialize Starfield last
+      await _initializeStarfield();
+     // var starfield = Starfield(density: 200, maxStarSize: 3.0);
+   //   await add(starfield);
+
       await images.loadAll([
         'player.png',
         'basic_enemy.png',
@@ -98,7 +106,7 @@ class SpaceShooterGame extends FlameGame
       print('powerUpIndicators: ');
       powerUpIndicators = PowerUpIndicators();
       await add(powerUpIndicators);
-
+   
       print('SpaceShooterGame: onLoad completed');
     } catch (e, stackTrace) {
       print('Error in SpaceShooterGame onLoad: $e');
@@ -106,7 +114,10 @@ class SpaceShooterGame extends FlameGame
     }
   }
 
-  @override
+ Future<void> _initializeStarfield() async {
+    starfield = Starfield(density: 300, maxStarSize: 3.0);
+    await add(starfield!);
+  }
   @override
   void update(double dt) {
     super.update(dt);
@@ -134,6 +145,12 @@ class SpaceShooterGame extends FlameGame
       // Handle joystick input
       Vector2 joystickMovement = joystick.delta * Player.speed * dt  * joystickSensitivity;
       player.move(joystickMovement);
+
+    // Update starfield based on player movement and acceleration
+       if (starfield != null && player != null) {
+        starfield?.updateShipMovement(player!.velocity);
+            print('SpaceShooterGame update: Player velocity = ${player.velocity}');
+      }
 
       if (inputHandler.isShooting) {
         player.shoot();

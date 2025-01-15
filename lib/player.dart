@@ -10,6 +10,13 @@ class Player extends SpriteAnimationComponent
     with HasGameRef<SpaceShooterGame>,GameRef, CollisionCallbacks {
   Player() : super(size: Vector2(60, 80));
 
+  bool _isInvulnerable = false;
+  double _invulnerabilityTimer = 0;
+  static const double invulnerabilityDuration = 1.5; // Seconds of invulnerability after hit
+
+  Vector2 velocity = Vector2.zero();
+  Vector2 acceleration = Vector2.zero();
+  final double thrust = 00; // Adjust as needed
   bool isShooting = false;
   double shootCooldown = 0;
   static const shootInterval = 0.5;
@@ -47,9 +54,6 @@ class Player extends SpriteAnimationComponent
     
     
 
-    // ... rest of initialization ...
- 
-    //debugMode = true; 
     position = gameRef.size / 2;
     anchor = Anchor.center;
     add(RectangleHitbox()..collisionType = CollisionType.active);
@@ -83,14 +87,6 @@ class Player extends SpriteAnimationComponent
       ),
     );
     }   
- void takeDamage() {
-    health = math.max(0, health - 1);
-    gameRef.uiManager.updateHealth(health);
-    if (health <= 0) {
-      removeFromParent();
-      gameState.gameOver();
-    }
-  }
 
   void resetHealth() {
     health = 3;
@@ -103,6 +99,10 @@ void reset() {
   resetPowerups();
   shootCooldown = 0;
   isShooting = false;
+
+  _isInvulnerable = false;
+  _invulnerabilityTimer = 0;
+  opacity = 1.0;
 }
 
   void resetPowerups() {
@@ -130,6 +130,17 @@ void updatePowerUps(double dt) {
   void update(double dt) {
     super.update(dt);
     shootCooldown -= dt;
+  if (_isInvulnerable) {
+    _invulnerabilityTimer -= dt;
+    if (_invulnerabilityTimer <= 0) {
+      _isInvulnerable = false;
+      opacity = 1.0;
+    } else {
+      // Optional: Make the ship blink while invulnerable
+      opacity = ((_invulnerabilityTimer * 10).floor() % 2 == 0) ? 0.5 : 0.8;
+    }
+  }
+
     if (shootCooldown <= 0) {
       isShooting = false;
     }
@@ -141,6 +152,7 @@ void updatePowerUps(double dt) {
 
   void move(Vector2 movement) {
     position += movement * speedMultiplier;
+     velocity = movement * speed;
     position.clamp(
       Vector2.zero() + size / 2,
       gameRef.size - size / 2,
@@ -176,12 +188,18 @@ void updatePowerUps(double dt) {
   }
 
 @override
-  void onCollision(Set<Vector2> intersectionPoints, PositionComponent other) {
+void onCollision(Set<Vector2> intersectionPoints, PositionComponent other) {
     super.onCollision(intersectionPoints, other);
-    if (other is Enemy) {
-      takeDamage();
-      if (!(other is TankEnemy)) {
-        other.takeDamage(1);
+    if (other is Enemy && !_isInvulnerable) {
+      if (shieldTimeLeft > 0) {
+        // If shield is active, don't take damage
+        other.removeFromParent();
+        audio.playSfx('shield_hit.mp3');
+      } else {
+        // Take damage but don't die instantly
+        takeDamage();
+        _startInvulnerabilityPeriod();
+        audio.playSfx('player_hit.mp3');
       }
     } else if (other is EnemyBullet) {
       if (shieldTimeLeft <= 0) {
@@ -195,5 +213,18 @@ void updatePowerUps(double dt) {
     }
   }
 
+void _startInvulnerabilityPeriod() {
+  _isInvulnerable = true;
+  _invulnerabilityTimer = invulnerabilityDuration;
+  opacity = 0.5; // Visual indicator that player is invulnerable
+}
+void takeDamage() {
+    health = math.max(0, health - 1);
+    gameRef.uiManager.updateHealth(health);
+    if (health <= 0) {
+      removeFromParent();
+      gameState.gameOver();
+    }
+}
  
   }
