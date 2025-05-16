@@ -9,27 +9,71 @@ class AudioManager extends Component with HasGameRef<SpaceShooterGame> {
 
  double _musicPlaybackRate = 1.0;
   Future<void> initialize() async {
-    await FlameAudio.audioCache.loadAll([
-      'background_music.mp3',
-      'laser.mp3',
-      'explosion.mp3',
-      'enemy_laser.mp3',
-      'player_hit.mp3',
-      'powerup.mp3',
-      'game_over.mp3',
-      'shield_hit.mp3'
-    ]);
-
-    soundPools['laser'] = await FlameAudio.createPool('laser.mp3', maxPlayers: 5);
-    soundPools['enemy_laser'] = await FlameAudio.createPool('enemy_laser.mp3', maxPlayers: 5);
-    soundPools['explosion'] = await FlameAudio.createPool('explosion.mp3', maxPlayers: 2);
+    try {
+      print('AudioManager: Initializing audio...');
+      
+      // List of all sound files to load
+      final soundFiles = [
+        'background_music.mp3',
+        'laser.mp3',
+        'explosion.mp3',
+        'enemy_laser.mp3',
+        'player_hit.mp3',
+        'powerup.mp3',
+        'game_over.mp3',
+        'shield_hit.mp3'
+      ];
+      
+      // Load each sound file individually with error reporting
+      for (final soundFile in soundFiles) {
+        try {
+          await FlameAudio.audioCache.load(soundFile);
+          print('Successfully loaded audio: $soundFile');
+        } catch (e) {
+          print('ERROR loading audio: $soundFile - $e');
+          // Continue loading other files even if one fails
+        }
+      }
+      
+      // Create audio pools with error handling
+      try {
+        soundPools['laser'] = await FlameAudio.createPool('laser.mp3', maxPlayers: 5);
+        print('Created audio pool: laser');
+      } catch (e) {
+        print('ERROR creating laser pool: $e');
+      }
+      
+      try {
+        soundPools['enemy_laser'] = await FlameAudio.createPool('enemy_laser.mp3', maxPlayers: 5);
+        print('Created audio pool: enemy_laser');
+      } catch (e) {
+        print('ERROR creating enemy_laser pool: $e');
+      }
+      
+      try {
+        soundPools['explosion'] = await FlameAudio.createPool('explosion.mp3', maxPlayers: 2);
+        print('Created audio pool: explosion');
+      } catch (e) {
+        print('ERROR creating explosion pool: $e');
+      }
+      
+      print('AudioManager: Initialization complete');
+    } catch (e) {
+      print('ERROR in AudioManager initialization: $e');
+    }
   }
 
   void playSfx(String sfxName) {
-    if (soundPools.containsKey(sfxName)) {
-      soundPools[sfxName]?.start();
-    } else {
-      FlameAudio.play(sfxName);
+    try {
+      if (soundPools.containsKey(sfxName)) {
+        soundPools[sfxName]?.start();
+        print('Playing sound from pool: $sfxName');
+      } else {
+        FlameAudio.play(sfxName);
+        print('Playing sound directly: $sfxName');
+      }
+    } catch (e) {
+      print('ERROR playing sound effect $sfxName: $e');
     }
   }
 

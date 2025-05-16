@@ -1,14 +1,21 @@
 import 'dart:math';
 import 'package:flame/components.dart';
-import 'powerup.dart';
-import 'space_shooter_game.dart';
+import 'package:flutter/material.dart';
 import 'enemies.dart';
+import 'boss_enemy.dart';
+import 'space_shooter_game.dart';
+import 'game_reference.dart';
+import 'level_management.dart';
+import 'powerup.dart';
 
 class EnemyManager extends Component with HasGameRef<SpaceShooterGame> {
   final Random random = Random();
   double enemySpawnTimer = 0;
-  static const double spawnInterval = 2.0;
-  static const int maxEnemies = 5;
+  double spawnRate = 30.0; // Enemies per minute
+  double get spawnInterval => 60.0 / spawnRate; // Convert to seconds between spawns
+  int maxEnemies = 5;
+  double enemySpeedMultiplier = 1.0;
+  List<String> availableEnemyTypes = ['basic', 'fast', 'tank'];
 
   @override
   void update(double dt) {
@@ -20,9 +27,16 @@ class EnemyManager extends Component with HasGameRef<SpaceShooterGame> {
   }
 
     enemySpawnTimer += dt;
-    if (enemySpawnTimer >= spawnInterval &&
-        gameRef.children.query<Enemy>().length < maxEnemies &&
-        gameRef.gameStateManager.enemiesSpawned < 100) {
+    
+    // Debug info
+    if (enemySpawnTimer >= spawnInterval) {
+      print('Enemy spawn check - Timer: $enemySpawnTimer, Interval: $spawnInterval');
+      print('Current enemies: ${gameRef.children.query<Enemy>().length}, Max: $maxEnemies');
+    }
+    
+    // Remove the 100 enemy limit that was causing spawning to stop
+    if (enemySpawnTimer >= spawnInterval && 
+        gameRef.children.query<Enemy>().length < maxEnemies) {
       spawnEnemy();
       spawnPowerUp();
       enemySpawnTimer = 0;
@@ -30,22 +44,36 @@ class EnemyManager extends Component with HasGameRef<SpaceShooterGame> {
   }
 
   void spawnEnemy() {
+    // Get available enemy types from current level
+    List<String> enemyTypes = gameRef.levelManager?.currentLevel.availableEnemyTypes ?? ['basic'];
+    if (enemyTypes.isEmpty) {
+      enemyTypes = ['basic']; // Fallback to basic enemy if none specified
+    }
+    
+    // Select random enemy type from available types
+    String enemyType = enemyTypes[random.nextInt(enemyTypes.length)];
+    
+    // Create enemy based on type
     Enemy enemy;
-    int randomEnemy = random.nextInt(3);
-    switch (randomEnemy) {
-      case 0:
-        enemy = BasicEnemy();
-        break;
-      case 1:
+    switch (enemyType) {
+      case 'fast':
         enemy = FastEnemy();
         break;
-      case 2:
+      case 'tank':
         enemy = TankEnemy();
         break;
+      case 'basic':
       default:
         enemy = BasicEnemy();
     }
+    
+    // Apply level-specific speed multiplier
+    enemy.speed *= enemySpeedMultiplier;
+    
+    // Set random position at top of screen
     enemy.position = Vector2(random.nextDouble() * gameRef.size.x, -50);
+    
+    // Add to game
     gameRef.add(enemy);
     gameRef.gameStateManager.enemySpawned();
   }
@@ -82,14 +110,45 @@ class EnemyManager extends Component with HasGameRef<SpaceShooterGame> {
 
   void reset() {
     enemySpawnTimer = 0;
+    
     // Remove all existing enemies
     gameRef.children
         .whereType<Enemy>()
         .forEach((enemy) => enemy.removeFromParent());
+    
     // Remove all existing power-ups
     gameRef.children
         .whereType<PowerUp>()
         .forEach((powerUp) => powerUp.removeFromParent());
-
+    
+    // Reset to current level settings
+    if (gameRef.levelManager != null) {
+      final currentLevel = gameRef.levelManager!.currentLevel;
+      spawnRate = currentLevel.enemySpawnRate.toDouble();
+      maxEnemies = currentLevel.enemyMaxOnScreen;
+      enemySpeedMultiplier = currentLevel.enemySpeedMultiplier;
+      availableEnemyTypes = List<String>.from(currentLevel.availableEnemyTypes);
+    }
+  }
+  
+  // Spawn a boss enemy for boss levels
+  void spawnBoss() {
+    try {
+      print('Spawning boss enemy');
+      
+      // Clear any existing enemies
+      gameRef.children
+          .whereType<Enemy>()
+          .forEach((enemy) => enemy.removeFromParent());
+      
+      // Create and add the boss
+      final boss = BossEnemy();
+      gameRef.add(boss);
+      
+      // Track the boss for objective completion
+      gameRef.currentBoss = boss;
+    } catch (e) {
+      print('Error spawning boss: $e');
+    }
   }
 }

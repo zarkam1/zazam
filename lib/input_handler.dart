@@ -24,6 +24,10 @@ class InputHandler extends Component with KeyboardHandler, HasGameRef<SpaceShoot
     } else if (event is KeyUpEvent && event.logicalKey == LogicalKeyboardKey.space) {
       isShooting = false;
     }
+  // X key for shield toggle
+    if (event is KeyDownEvent && event.logicalKey == LogicalKeyboardKey.keyX) {
+      gameRef.player.toggleShield();
+    }
 
     return true;
   }

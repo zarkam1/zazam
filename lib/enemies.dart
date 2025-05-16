@@ -8,6 +8,7 @@ import 'particle_explosion.dart';
 import 'player.dart';
 import 'space_shooter_game.dart';
 import 'bullets.dart';
+import 'currency_system.dart';
 
 class HealthBarComponent extends PositionComponent {
   final int maxHealth;
@@ -73,6 +74,9 @@ abstract class Enemy extends SpriteAnimationComponent
   static const double flashDuration = 0.1;
   double _shieldPulseTimer = 0;
   final random = Random();
+  
+  // Add maxHealth property for boss health percentage calculation
+  double get maxHealth => health.toDouble();
 
   Enemy({
     required this.speed,
@@ -195,10 +199,80 @@ abstract class Enemy extends SpriteAnimationComponent
     healthBar.updateHealth(health);
     
     if (health <= 0) {
-      gameRef.add(ParticleExplosion(position: position, size: size, color: Colors.red));
-      removeFromParent();
+      // Add explosion effect
+      gameRef.add(
+        ParticleExplosion(
+          position: position,
+          size: size,
+          color: Colors.orange,
+        )
+      );
+      
+      // Add score
       gameState.increaseScore(scoreValue);
+      
+      // Drop scrap currency
+      _dropScrap();
+      
+      // Play sound
       audio.playSfx('explosion.mp3');
+      
+      // Remove from game
+      removeFromParent();
+    }
+  }
+  
+  // Drop scrap currency when enemy is destroyed
+  void _dropScrap() {
+    try {
+      final random = Random();
+      
+      // Base amount of scrap to drop
+      int baseScrap = max(1, (scoreValue / 10).ceil());
+      
+      // Add some randomness (±20%)
+      int randomVariation = baseScrap > 1 ? random.nextInt(max(1, baseScrap ~/ 2)) : 0;
+      int scrapAmount = baseScrap + randomVariation - (baseScrap ~/ 4);
+      scrapAmount = max(1, scrapAmount.clamp(1, 10)); // Ensure at least 1 scrap, max 10
+      
+      // Determine if we drop multiple pieces or one larger piece
+      bool dropMultiple = random.nextBool() && scrapAmount > 1;
+      
+      if (dropMultiple) {
+        // Drop 2-3 pieces of scrap
+        int pieces = min(3, scrapAmount);
+        int valuePerPiece = max(1, (scrapAmount / pieces).ceil());
+        
+        for (int i = 0; i < pieces; i++) {
+          // Scatter the scrap around the enemy position
+          Vector2 offset = Vector2(
+            (random.nextDouble() - 0.5) * size.x * 1.2,
+            (random.nextDouble() - 0.5) * size.y * 1.2,
+          );
+          
+          gameRef.add(ScrapComponent(
+            position: position + offset,
+            value: valuePerPiece,
+          ));
+        }
+      } else {
+        // Drop a single piece of scrap
+        gameRef.add(ScrapComponent(
+          position: position.clone(),
+          value: scrapAmount,
+        ));
+      }
+    } catch (e) {
+      print('Error in _dropScrap: $e');
+      // Fallback: drop a single piece of scrap with value 1
+      try {
+        gameRef.add(ScrapComponent(
+          position: position.clone(),
+          value: 1,
+        ));
+      } catch (e) {
+        print('Failed to drop fallback scrap: $e');
+      }
     }
   }
 
@@ -230,14 +304,50 @@ class BasicEnemy extends Enemy {
   @override
   Future<void> onLoad() async {
     await super.onLoad();
-    animation = await gameRef.loadSpriteAnimation(
-      'basic_enemy.png',
-      SpriteAnimationData.sequenced(
-        amount: 4,
-        stepTime: 0.2,
-        textureSize: Vector2.all(32),
-      ),
-    );
+    try {
+      print('BasicEnemy: Loading sprite...');
+      
+      // First try to load directly as a Sprite
+      try {
+        final sprite = await Sprite.load('basic_enemy.png');
+        animation = SpriteAnimation.spriteList(
+          [sprite],
+          stepTime: 1,
+        );
+        print('BasicEnemy: Successfully loaded sprite directly');
+      } catch (spriteError) {
+        print('BasicEnemy: Direct sprite loading failed: $spriteError');
+        
+        // Fallback to animation loading
+        try {
+          animation = SpriteAnimation.fromFrameData(
+            await gameRef.images.load('basic_enemy.png'),
+            SpriteAnimationData.sequenced(
+              amount: 1,
+              stepTime: 1,
+              textureSize: Vector2.all(64),
+            ),
+          );
+          print('BasicEnemy: Successfully loaded via animation');
+        } catch (animError) {
+          print('BasicEnemy: Animation loading also failed: $animError');
+          throw animError; // Re-throw to be caught by outer try-catch
+        }
+      }
+      
+      // Set anchor to center for better positioning
+      anchor = Anchor.center;
+      print('BasicEnemy: Sprite loaded successfully');
+    } catch (e) {
+      print('Error loading basic enemy sprite: $e');
+      // Create a fallback colored rectangle
+      final paint = Paint()..color = Colors.red;
+      final renderRect = RectangleComponent(
+        size: size,
+        paint: paint,
+      );
+      add(renderRect);
+    }
   }
 }
 
@@ -255,14 +365,22 @@ class FastEnemy extends Enemy {
   @override
   Future<void> onLoad() async {
     await super.onLoad();
-    animation = await gameRef.loadSpriteAnimation(
-      'fast_enemy.png',
-      SpriteAnimationData.sequenced(
-        amount: 5,
-        stepTime: 0.15,
-        textureSize: Vector2.all(32),
-      ),
-    );
+    try {
+      // Load as a single sprite instead of animation
+      animation = SpriteAnimation.fromFrameData(
+        await gameRef.images.load('fast_enemy.png'),
+        SpriteAnimationData.sequenced(
+          amount: 1,
+          stepTime: 1,
+          textureSize: Vector2.all(64),
+        ),
+      );
+      
+      // Set anchor to center for better positioning
+      anchor = Anchor.center;
+    } catch (e) {
+      print('Error loading fast enemy sprite: $e');
+    }
   }
 }
 
@@ -289,35 +407,44 @@ class TankEnemy extends Enemy {
   Future<void> onLoad() async {
     await super.onLoad();
     
-    // Main tank animation
-    animation = await gameRef.loadSpriteAnimation(
-      'tank_enemy.png',
-      SpriteAnimationData.sequenced(
-        amount: 6,
-        stepTime: 0.3,
-        textureSize: Vector2.all(32),
-      ),
-    );
-
-    // Shield effect
-    final shieldAnimation = await gameRef.loadSpriteAnimation(
-      'shield_animation.png',
-      SpriteAnimationData.sequenced(
-        amount: 6,
-        stepTime: 0.1,
-        textureSize: Vector2.all(32),
-        loop: true,
-      ),
-    );
-
-    shieldEffect = SpriteAnimationComponent(
-      animation: shieldAnimation,
-      size: Vector2(size.x * 1.2, size.y * 1.2),
-    );
-    shieldEffect?.anchor = Anchor.center;
-    shieldEffect?.position = size / 2;
-    if (shieldEffect != null) {
-      add(shieldEffect!);
+    try {
+      // Load as a single sprite instead of animation
+      animation = SpriteAnimation.fromFrameData(
+        await gameRef.images.load('tank_enemy.png'),
+        SpriteAnimationData.sequenced(
+          amount: 1,
+          stepTime: 1,
+          textureSize: Vector2.all(64),
+        ),
+      );
+      
+      // Set anchor to center for better positioning
+      anchor = Anchor.center;
+      
+      // Create a simple shield effect
+      final shieldAnimation = SpriteAnimation.fromFrameData(
+        await gameRef.images.load('shield_animation.png'),
+        SpriteAnimationData.sequenced(
+          amount: 1,
+          stepTime: 0.1,
+          textureSize: Vector2.all(64),
+          loop: true,
+        ),
+      );
+      
+      shieldEffect = SpriteAnimationComponent(
+        animation: shieldAnimation,
+        size: Vector2(size.x * 1.2, size.y * 1.2),
+      );
+      
+      shieldEffect?.anchor = Anchor.center;
+      shieldEffect?.position = size / 2;
+      
+      if (shieldEffect != null) {
+        add(shieldEffect!);
+      }
+    } catch (e) {
+      print('Error loading tank enemy sprite: $e');
     }
 
     // Health bar

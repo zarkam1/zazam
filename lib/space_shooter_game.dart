@@ -19,12 +19,17 @@ import 'powerupindicators.dart';
 import 'styled_button.dart';
 import 'ui_manager.dart';
 import 'audio_manager.dart';
+import 'currency_system.dart';
+import 'level_management.dart';
+import 'performance_overlay.dart';
+import 'background_manager.dart';
+import 'workaround.dart'; // Import workaround for extension methods
 
-enum GameState { menu, playing, gameOver }
+enum GameState { menu, playing, paused, gameOver }
 
 class SpaceShooterGame extends FlameGame
-    with HasCollisionDetection, KeyboardEvents, TapDetector {
-   late Player player;
+    with HasCollisionDetection, KeyboardEvents, TapDetector, HasGameRef {
+  late Player player;
   Starfield? starfield;
   late GameStateManager gameStateManager;
   late EnemyManager enemyManager;
@@ -35,12 +40,22 @@ class SpaceShooterGame extends FlameGame
   late HudButtonComponent shootButton;
   late PowerUpIndicators powerUpIndicators;
   static const double joystickSensitivity = 0.1; // Adjust this value to change sensitivity
-
+  late HudButtonComponent shieldButton;
+  // Level management
+  late LevelManager levelManager;
+  late BackgroundManager backgroundManager;
+  late ScrapManager scrapManager;
+  double objectiveTimer = 0.0;
+  int enemiesDestroyedInLevel = 0;
+  Enemy? currentBoss;
   @override
   Future<void> onLoad() async {
     try {
       print('SpaceShooterGame: onLoad started');
       await super.onLoad();
+      
+      // Initialize currency system
+      scrapManager = ScrapManager();
  // Add this line to load the parallax background
       // Add Starfield
 
@@ -49,25 +64,50 @@ class SpaceShooterGame extends FlameGame
      // var starfield = Starfield(density: 200, maxStarSize: 3.0);
    //   await add(starfield);
 
-      await images.loadAll([
-        'player.png',
-        'basic_enemy.png',
-        'bullet.png',
-        'enemy_bullet.png',
-        'button_bg.png',
-        'powerup_speedBoost.png',
-        'powerup_extraLife.png',
-        'powerup_rapidFire.png',
-        'powerup_shield.png',
-        'shield.png',
-        'shield_animation.png'
-      ]);
-      print('SpaceShooterGame: Images loaded');
+      // Load all game images with error handling
+      try {
+        print('Loading game images...');
+        final imagesToLoad = [
+          'player.png',
+          'basic_enemy.png',
+          'fast_enemy.png',
+          'tank_enemy.png',
+          'boss_enemy.png',
+          'bullet.png',
+          'enemy_bullet.png',
+          'button_bg.png',
+          'powerup_speedBoost.png',
+          'powerup_extraLife.png',
+          'powerup_rapidFire.png',
+          'powerup_shield.png',
+          'shield.png',
+          'shield_animation.png'
+        ];
+        
+        // Load each image individually with error reporting
+        for (final imagePath in imagesToLoad) {
+          try {
+            await images.load(imagePath);
+            print('Successfully loaded: $imagePath');
+          } catch (e) {
+            print('ERROR loading image: $imagePath - $e');
+          }
+        }
+        
+        print('SpaceShooterGame: Images loaded');
+      } catch (e) {
+        print('Error in batch image loading: $e');
+      }
       player = Player();
       gameStateManager = GameStateManager();
       enemyManager = EnemyManager();
       uiManager = UIManager();
       audioManager = AudioManager();
+      
+      // Initialize managers
+      levelManager = LevelManager();
+      backgroundManager = BackgroundManager();
+      scrapManager = ScrapManager();
 
       inputHandler = InputHandler();
       add(inputHandler);
@@ -90,15 +130,33 @@ class SpaceShooterGame extends FlameGame
         position: Vector2(size.x - 50, size.y - 50),
         onPressed: () => player.shoot(),
       );
-      add(shootButton);
-
+      await add(shootButton);
       print('SpaceShooterGame: Shoot button added');
 
-      await addAll([player, gameStateManager, enemyManager, uiManager]);
+      shieldButton = HudButtonComponent(
+        button: CircleComponent(radius: 30, paint: BasicPalette.blue.paint()),
+        buttonDown: CircleComponent(radius: 30,paint: BasicPalette.blue.withAlpha(100).paint()),
+        position: Vector2(size.x - 50, size.y - 120), // Position above shoot button
+        onPressed: () => player.toggleShield(),
+      );
+      await add(shieldButton);
+
+      // Add performance overlay
+      final performanceOverlay = GamePerformanceOverlay(
+        position: Vector2(10, size.y - 30),
+        showDetailedStats: true,
+      );
+      await add(performanceOverlay);
+      print('SpaceShooterGame: Performance overlay added');
+      
+      await addAll([backgroundManager, player, gameStateManager, enemyManager, uiManager]);
       print('SpaceShooterGame: Components added');
       await audioManager.initialize();
       print('SpaceShooterGame: Audio initialized');
-      // gameStateManager.initialize();
+      
+      // Initialize level manager and currency system
+      initializeLevelSystem();
+      
       print('SpaceShooterGame: Setting initial state to menu');
       gameStateManager.state = GameState.menu;
       print('SpaceShooterGame: Initial state set to menu');
@@ -118,6 +176,7 @@ class SpaceShooterGame extends FlameGame
     starfield = Starfield(density: 300, maxStarSize: 3.0);
     await add(starfield!);
   }
+
   @override
   void update(double dt) {
     super.update(dt);
@@ -128,72 +187,241 @@ class SpaceShooterGame extends FlameGame
       player.removeFromParent();
       joystick.removeFromParent();
       shootButton.removeFromParent();
-      
     } else if (gameStateManager.state == GameState.playing) {
       children.whereType<MenuComponent>().forEach((menu) => menu.removeFromParent());
       if (!children.contains(player)) add(player);
       if (!children.contains(joystick)) add(joystick);
       if (!children.contains(shootButton)) add(shootButton);
-      
+      // Ensure pause button is present
+      if (!children.any((c) => c is PauseButtonComponent)) {
+        add(PauseButtonComponent());
+      }
       enemyManager.update(dt);
       uiManager.update(dt);
       powerUpIndicators.updateIndicators(player);
       Vector2 keyboardMovement = inputHandler.movement * Player.speed * dt;
       player.move(keyboardMovement);
 
-      player.move(inputHandler.movement);
       // Handle joystick input
-      Vector2 joystickMovement = joystick.delta * Player.speed * dt  * joystickSensitivity;
+      Vector2 joystickMovement = joystick.delta * Player.speed * dt * joystickSensitivity;
       player.move(joystickMovement);
 
-    // Update starfield based on player movement and acceleration
-       if (starfield != null && player != null) {
-        starfield?.updateShipMovement(player!.velocity);
-            print('SpaceShooterGame update: Player velocity = ${player.velocity}');
+      // Update starfield based on player movement and acceleration
+      if (starfield != null && player != null) {
+        starfield?.updateShipMovement(player.velocity);
       }
 
       if (inputHandler.isShooting) {
         player.shoot();
       }
-      Vector2 totalMovement = inputHandler.movement + joystick.delta;
-      player.move(totalMovement.normalized());
+      
+      // Update level objectives
+      updateLevelProgress(dt);
+    }
+    else if (gameStateManager.state == GameState.paused) {
+      // Do not update game logic when paused
+      return;
     }
     else if (gameStateManager.state == GameState.gameOver) {
-    player.removeFromParent();
-    joystick.removeFromParent();
-    shootButton.removeFromParent();
-    if (!children.any((component) => component is GameOverComponent)) {
-      add(GameOverComponent(score: gameStateManager.score));
+      player.removeFromParent();
+      joystick.removeFromParent();
+      shootButton.removeFromParent();
+      if (!children.any((component) => component is GameOverComponent)) {
+        add(GameOverComponent(score: gameStateManager.score));
+      }
     }
   }
 
- } 
- 
- 
- void resetGame() {
-  print('SpaceShooterGame: Resetting game');
-  children.whereType<Enemy>().toList().forEach((enemy) => enemy.removeFromParent());
-  children.whereType<Bullet>().toList().forEach((bullet) => bullet.removeFromParent());
-  children.whereType<EnemyBullet>().toList().forEach((bullet) => bullet.removeFromParent());
-  children.whereType<PowerUp>().toList().forEach((powerUp) => powerUp.removeFromParent());
-  children.whereType<GameOverComponent>().toList().forEach((component) => component.removeFromParent());
+  // Update level progress based on objective type
+  void updateLevelProgress(double dt) {
+    try {
+      if (gameStateManager.state != GameState.playing || levelManager == null) return;
+      
+      final currentLevel = levelManager!.currentLevel;
+      double progress = 0.0;
+      
+      // Handle different objective types
+      switch (currentLevel.objectiveType) {
+        case ObjectiveType.SURVIVE:
+          // Update objective timer for SURVIVE objectives
+          objectiveTimer += dt;
+          final targetTime = currentLevel.objectiveValue as int;
+          progress = objectiveTimer / targetTime;
+          
+          // Check if survival time has been reached
+          if (objectiveTimer >= targetTime) {
+            completeLevel();
+          }
+          break;
+          
+        case ObjectiveType.DESTROY_COUNT:
+          // For DESTROY_COUNT objectives, the enemiesDestroyedInLevel counter is updated
+          // when enemies are destroyed, and we check here if the target has been reached
+          final targetCount = currentLevel.objectiveValue as int;
+          progress = enemiesDestroyedInLevel / targetCount;
+          
+          if (enemiesDestroyedInLevel >= targetCount) {
+            completeLevel();
+          }
+          break;
+          
+        case ObjectiveType.BOSS:
+          // For BOSS objectives, check if we need to spawn a boss
+          if (currentBoss == null || !currentBoss!.isMounted) {
+            // Only spawn boss if it doesn't exist or has been removed
+            enemyManager.spawnBoss();
+          } else {
+            // Calculate progress based on boss health percentage
+            final healthPercentage = currentBoss!.health / currentBoss!.maxHealth;
+            progress = 1.0 - healthPercentage;
+            
+            // Check if boss is defeated
+            if (currentBoss!.health <= 0) {
+              completeLevel();
+            }
+          }
+          break;
+          
+        default:
+          // Handle other objective types if needed
+          break;
+      }
+      
+      // Update the level manager with current progress
+      levelManager!.updateObjectiveProgress(progress.clamp(0.0, 1.0));
+    } catch (e) {
+      print('Error in updateLevelProgress: $e');
+    }
+    
+    // Update UI
+    updateLevelObjective();
+  }
   
-  player.reset();
-  powerUpIndicators.resetIndicators();
-  enemyManager.reset();
-  uiManager.reset();
-
-  // Remove these components
-  player.removeFromParent();
-  joystick.removeFromParent();
-  shootButton.removeFromParent();
-
-  // Add menu component
-  add(MenuComponent());
-
-  print('SpaceShooterGame: Game reset completed');
-}
+  // Handle enemy destroyed for objective tracking
+  void onEnemyDestroyed() {
+    enemiesDestroyedInLevel++;
+  }
+  
+  // Complete the current level and advance to the next
+  void completeLevel() {
+    if (gameStateManager.state != GameState.playing || levelManager == null) return;
+    
+    // Mark level as complete
+    print('Level ${levelManager!.currentLevel.id} completed!');
+    
+    // Check if there are more levels
+    if (levelManager!.hasNextLevel) {
+      // Advance to the next level
+      levelManager!.advanceToNextLevel();
+      
+      // Reset level-specific variables
+      objectiveTimer = 0.0;
+      enemiesDestroyedInLevel = 0;
+      currentBoss = null;
+      
+      // Get the new level settings
+      final newLevel = levelManager!.currentLevel;
+      enemyManager.spawnRate = newLevel.enemySpawnRate.toDouble();
+      enemyManager.maxEnemies = newLevel.enemyMaxOnScreen;
+      enemyManager.enemySpeedMultiplier = newLevel.enemySpeedMultiplier;
+      
+      // Show level briefing (could be implemented as an overlay)
+      // overlays.add('level_briefing');
+    } else {
+      // Game completed - show victory screen or return to menu
+      gameStateManager.state = GameState.menu;
+    }
+  }
  
+  void resetGame() {
+    print('SpaceShooterGame: Resetting game');
+    children.whereType<Enemy>().toList().forEach((enemy) => enemy.removeFromParent());
+    children.whereType<Bullet>().toList().forEach((bullet) => bullet.removeFromParent());
+    children.whereType<EnemyBullet>().toList().forEach((bullet) => bullet.removeFromParent());
+    children.whereType<PowerUp>().toList().forEach((powerUp) => powerUp.removeFromParent());
+    children.whereType<GameOverComponent>().toList().forEach((component) => component.removeFromParent());
+    
+    player.reset();
+    powerUpIndicators.resetIndicators();
+    enemyManager.reset();
+    uiManager.reset();
+    
+    // Reset level-related variables
+    objectiveTimer = 0.0;
+    enemiesDestroyedInLevel = 0;
+    levelManager?.resetLevels();
+    
+    // Update UI with current level objective
+    updateLevelObjective();
+    
+    // Remove these components
+    player.removeFromParent();
+    joystick.removeFromParent();
+    shootButton.removeFromParent();
+
+    // Add menu component
+    add(MenuComponent());
+
+    print('SpaceShooterGame: Game reset completed');
+  }
+  
+  // Initialize level system
+  void initializeLevelSystem() {
+    final currentLevel = levelManager.getCurrentLevel();
+    
+    // Set enemy spawn parameters based on level
+    enemyManager.setSpawnParameters(
+      spawnRate: currentLevel.enemySpawnRate.toDouble(),
+      maxEnemies: currentLevel.enemyMaxOnScreen,
+      speedMultiplier: currentLevel.enemySpeedMultiplier,
+      availableTypes: currentLevel.availableEnemyTypes,
+    );
+    
+    // Set the background for this level
+    backgroundManager.setLevelBackground(currentLevel);
+    
+    // Show level briefing
+    uiManager.showLevelBriefing(currentLevel.briefingText, currentLevel.id);
+  }
+  
+  // Update the UI with the current level objective
+  void updateLevelObjective() {
+    if (uiManager == null || levelManager == null) return;
+    
+    final currentLevel = levelManager!.currentLevel;
+    String objectiveText = '';
+    double progress = 0.0;
+    
+    switch (currentLevel.objectiveType) {
+      case ObjectiveType.SURVIVE:
+        final targetTime = currentLevel.objectiveValue as int;
+        objectiveText = 'Survive for ${targetTime}s';
+        progress = objectiveTimer / targetTime;
+        break;
+      case ObjectiveType.DESTROY_COUNT:
+        final targetCount = currentLevel.objectiveValue as int;
+        objectiveText = 'Destroy ${targetCount} enemies';
+        progress = enemiesDestroyedInLevel / targetCount;
+        break;
+      case ObjectiveType.BOSS:
+        objectiveText = 'Defeat the boss';
+        progress = 0.0; // Will be updated when boss is implemented
+        break;
+      default:
+        objectiveText = 'Unknown objective';
+    }
+    
+    uiManager.updateObjective(objectiveText, progress.clamp(0.0, 1.0));
+  }
+  
+  // Add scrap to the player's currency
+  void addScrap(int amount) {
+    scrapManager.addScrap(amount);
+    
+    // Update UI if needed
+    // uiManager.updateScrap(scrapManager.scrapAmount);
+  }
+  
   @override
   void onTapDown(TapDownInfo info) {
     if (gameStateManager.state == GameState.menu) {
@@ -206,9 +434,43 @@ class SpaceShooterGame extends FlameGame
     KeyEvent event,
     Set<LogicalKeyboardKey> keysPressed,
   ) {
+    // Pause/resume with Escape or P
+    if (event is RawKeyDownEvent) {
+      if (gameStateManager.state == GameState.playing &&
+          (event.logicalKey == LogicalKeyboardKey.escape || event.logicalKey == LogicalKeyboardKey.keyP)) {
+        gameStateManager.pauseGame();
+        return KeyEventResult.handled;
+      } else if (gameStateManager.state == GameState.paused &&
+          (event.logicalKey == LogicalKeyboardKey.escape || event.logicalKey == LogicalKeyboardKey.keyP)) {
+        gameStateManager.resumeGame();
+        return KeyEventResult.handled;
+      }
+    }
     super.onKeyEvent(event, keysPressed);
     inputHandler.onKeyEvent(event, keysPressed);
     return KeyEventResult.handled;
+  }
+}
+
+// ========== Pause Button Component ==========
+
+class PauseButtonComponent extends PositionComponent with HasGameRef<SpaceShooterGame>, TapCallbacks {
+  late StyledButton pauseButton;
+
+  @override
+  Future<void> onLoad() async {
+    await super.onLoad();
+    size = Vector2(60, 40);
+    position = Vector2(gameRef.size.x - 80, 20);
+    pauseButton = StyledButton(
+      text: 'Pause',
+      onPressed: () {
+        gameRef.gameStateManager.pauseGame();
+      },
+      position: Vector2.zero(),
+      size: size,
+    );
+    await add(pauseButton);
   }
 }
 

@@ -18,6 +18,7 @@ SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
                 child: Text('Loading...', style: TextStyle(color: Colors.white, fontSize: 24)),
               );
             },
+            'pause_menu': (_, SpaceShooterGame game) => PauseMenu(game: game),
           },
           loadingBuilder: (context) => const Center(
             child: CircularProgressIndicator(),
@@ -40,7 +41,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-       debugShowCheckedModeBanner: false,
+      debugShowCheckedModeBanner: false,
       title: 'Space Shooter',
       theme: ThemeData(
         primarySwatch: Colors.blue,
@@ -66,7 +67,7 @@ class GameScreen extends StatelessWidget {
           child: Text('An error occurred: $error'),
         ),
         overlayBuilderMap: {
-          'pause_menu': (context, game) => const PauseMenu(),
+          'pause_menu': (context, game) => PauseMenu(game: game as SpaceShooterGame),
         },
       ),
     );
@@ -74,7 +75,9 @@ class GameScreen extends StatelessWidget {
 }
 
 class PauseMenu extends StatelessWidget {
-  const PauseMenu({Key? key}) : super(key: key);
+  const PauseMenu({Key? key, this.game}) : super(key: key);
+
+  final SpaceShooterGame? game;
 
   @override
   Widget build(BuildContext context) {
@@ -88,7 +91,7 @@ class PauseMenu extends StatelessWidget {
             const SizedBox(height: 20),
             ElevatedButton(
               onPressed: () {
-                // Resume game logic here
+                game?.gameStateManager.resumeGame();
               },
               child: const Text('Resume'),
             ),

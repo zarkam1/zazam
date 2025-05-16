@@ -111,6 +111,7 @@ class RapidFire extends PowerUp {
 
 class Shield extends PowerUp {
   static const duration = 10.0; // Duration in seconds
+  static const double energyAmount = 50.0; // Gives 50% of max shield energy
 
   Shield({required Vector2 position})
       : super(position: position, size: Vector2(30, 30));
@@ -129,7 +130,7 @@ class Shield extends PowerUp {
   }
 
   @override
-  void applyEffect(Player player) {
-    player.applyShield(duration);
+   void applyEffect(Player player) {
+    player.addShieldEnergy(energyAmount);
   }
 }
