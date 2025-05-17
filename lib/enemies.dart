@@ -91,15 +91,6 @@ abstract class Enemy extends SpriteAnimationComponent
     await super.onLoad();
     add(RectangleHitbox()..collisionType = CollisionType.passive);
     
-    // Add health bar to all enemies
-    healthBar = HealthBarComponent(
-      maxHealth: health,
-      currentHealth: health,
-      size: Vector2(size.x * 0.8, 3), // Smaller than tank's health bar
-    );
-    healthBar.position = Vector2(size.x * 0.1, -8);
-    add(healthBar);
-
     // Add shield if enemy has one
     if (hasShield) {
       final shieldAnimation = await gameRef.loadSpriteAnimation(
@@ -121,6 +112,15 @@ abstract class Enemy extends SpriteAnimationComponent
       shieldEffect!.opacity = 0.3;
       add(shieldEffect!);
     }
+
+    // Add health bar to all enemies
+    healthBar = HealthBarComponent(
+      maxHealth: health,
+      currentHealth: health,
+      size: Vector2(size.x * 0.8, 3), // Smaller than tank's health bar
+    );
+    healthBar.position = Vector2(size.x * 0.1, -8);
+    add(healthBar);
 
     _shieldPulseTimer = random.nextDouble() * 2 * pi;
   }
@@ -309,11 +309,12 @@ class BasicEnemy extends Enemy {
       
       // First try to load directly as a Sprite
       try {
-        final sprite = await Sprite.load('basic_enemy.png');
+        final sprite = await Sprite.load('new/enemy_ship_0_neon_256.png');
         animation = SpriteAnimation.spriteList(
           [sprite],
           stepTime: 1,
         );
+        angle = 3.141592653589793; // pi, rotate 180 degrees
         print('BasicEnemy: Successfully loaded sprite directly');
       } catch (spriteError) {
         print('BasicEnemy: Direct sprite loading failed: $spriteError');
@@ -368,14 +369,14 @@ class FastEnemy extends Enemy {
     try {
       // Load as a single sprite instead of animation
       animation = SpriteAnimation.fromFrameData(
-        await gameRef.images.load('fast_enemy.png'),
+        await gameRef.images.load('new/enemy_ship_1_neon_256.png'),
         SpriteAnimationData.sequenced(
           amount: 1,
           stepTime: 1,
           textureSize: Vector2.all(64),
         ),
       );
-      
+      angle = 3.141592653589793; // pi, rotate 180 degrees
       // Set anchor to center for better positioning
       anchor = Anchor.center;
     } catch (e) {
@@ -410,14 +411,14 @@ class TankEnemy extends Enemy {
     try {
       // Load as a single sprite instead of animation
       animation = SpriteAnimation.fromFrameData(
-        await gameRef.images.load('tank_enemy.png'),
+        await gameRef.images.load('new/enemy_ship_3_neon_256.png'),
         SpriteAnimationData.sequenced(
           amount: 1,
           stepTime: 1,
           textureSize: Vector2.all(64),
         ),
       );
-      
+      angle = 3.141592653589793; // pi, rotate 180 degrees
       // Set anchor to center for better positioning
       anchor = Anchor.center;
       

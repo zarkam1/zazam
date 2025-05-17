@@ -90,6 +90,12 @@ class Starfield extends Component {
   void render(Canvas canvas) {
     if (!_initialized || _lastKnownGameSize == null) return;
 
+    // Draw solid black background
+    canvas.drawRect(
+      Rect.fromLTWH(0, 0, _lastKnownGameSize!.x, _lastKnownGameSize!.y),
+      Paint()..color = Colors.black,
+    );
+
     for (var star in stars) {
       final paint = Paint()
         ..color = star.color.withOpacity(star.speed)

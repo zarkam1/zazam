@@ -11,14 +11,14 @@ import 'font_renderer.dart';
 
 class UIManager extends Component with HasGameRef<SpaceShooterGame>, GameRef {
   // UI Components
-  TextComponent? healthText;
-  TextComponent? scoreText;
+  Component? healthText;
+  Component? scoreText;
   Component? passesLeftText;
   Component? enemiesPassedText;
   Component? livesText;
   Component? objectiveText;
   FpsTextComponent? fpsText;
-  TextComponent? shieldEnergyText;
+  Component? shieldEnergyText;
   RectangleComponent? healthBar;
   RectangleComponent? healthBackground;
   RectangleComponent? shieldEnergyBar;
@@ -86,14 +86,13 @@ class UIManager extends Component with HasGameRef<SpaceShooterGame>, GameRef {
       ),
     );
     
-    // Use SimpleNeonText for health label
-    final healthLabel = SimpleNeonText(
+    // Use StylizedTextRenderer for health label
+    final healthLabel = StylizedTextRenderer.createPulsingText(
       text: 'HEALTH',
-      color: Colors.greenAccent,
-      fontSize: 16,
-      
-      
+      style: StylizedTextRenderer.hudStyle,
       position: Vector2(120, 8),
+      pulseMin: 0.8,
+      pulseMax: 1.0,
     );
     
     // Lives display with neon styling
@@ -105,14 +104,13 @@ class UIManager extends Component with HasGameRef<SpaceShooterGame>, GameRef {
       pulseMax: 1.0,
     );
 
-    // Score with neon styling
-    scoreText = SimpleNeonText(
+    // Score with neon styling (unified)
+    scoreText = StylizedTextRenderer.createPulsingText(
       text: 'SCORE: 0',
-      color: Colors.purpleAccent,
-      fontSize: 16,
-      
-      
+      style: StylizedTextRenderer.hudStyle.copyWith(color: Colors.purpleAccent),
       position: Vector2(10, 50),
+      pulseMin: 0.8,
+      pulseMax: 1.0,
     );
     
     // Objective text with neon styling
@@ -127,6 +125,8 @@ class UIManager extends Component with HasGameRef<SpaceShooterGame>, GameRef {
       text: 'PASSES LEFT: ${GameStateManager.maxEnemiesPassed}',
       style: StylizedTextRenderer.hudStyle,
       position: Vector2(10, 90),
+      pulseMin: 0.8,
+      pulseMax: 1.0,
     );
 
     // Enemies passed with neon styling
@@ -134,6 +134,8 @@ class UIManager extends Component with HasGameRef<SpaceShooterGame>, GameRef {
       text: 'ENEMIES PASSED: 0',
       style: StylizedTextRenderer.hudStyle,
       position: Vector2(10, 110),
+      pulseMin: 0.8,
+      pulseMax: 1.0,
     );
 
     // Shield energy bar with neon styling
@@ -171,14 +173,13 @@ class UIManager extends Component with HasGameRef<SpaceShooterGame>, GameRef {
       ),
     );
 
-    // Shield text with neon styling
-    shieldEnergyText = SimpleNeonText(
+    // Shield text with neon styling (unified)
+    shieldEnergyText = StylizedTextRenderer.createPulsingText(
       text: 'SHIELD: 0%',
-      color: Colors.blueAccent,
-      fontSize: 16,
-      
-      
+      style: StylizedTextRenderer.hudStyle.copyWith(color: Colors.blueAccent),
       position: Vector2(120, 128),
+      pulseMin: 0.8,
+      pulseMax: 1.0,
     );
 
     // Add components safely with null checks
@@ -429,7 +430,7 @@ class UIManager extends Component with HasGameRef<SpaceShooterGame>, GameRef {
   }
 
   void setUIOpacity(double opacity) {
-    setTextComponentOpacity(healthText, opacity);
+    if (healthText is TextComponent) setTextComponentOpacity(healthText as TextComponent, opacity);
     if (livesText is TextComponent) setTextComponentOpacity(livesText as TextComponent, opacity);
     if (scoreText is TextComponent) setTextComponentOpacity(scoreText as TextComponent, opacity);
     if (objectiveText is TextComponent) setTextComponentOpacity(objectiveText as TextComponent, opacity);

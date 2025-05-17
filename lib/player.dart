@@ -14,7 +14,7 @@ import 'shader_effects.dart';
 
 class Player extends SpriteAnimationComponent
     with HasGameRef<SpaceShooterGame>,GameRef, CollisionCallbacks {
-  Player() : super(size: Vector2(60, 80));
+  Player() : super(size: Vector2(40, 54));
 
   bool _isInvulnerable = false;
   double _invulnerabilityTimer = 0;
@@ -101,7 +101,7 @@ class Player extends SpriteAnimationComponent
         
         // First try to load directly as a Sprite
         try {
-          final sprite = await Sprite.load('player.png');
+          final sprite = await Sprite.load('new/player_256.png');
           animation = SpriteAnimation.spriteList(
             [sprite],
             stepTime: 1,
@@ -113,7 +113,7 @@ class Player extends SpriteAnimationComponent
           // Fallback to animation loading
           try {
             animation = SpriteAnimation.fromFrameData(
-              await gameRef.images.load('player.png'),
+              await gameRef.images.load('new/player_256.png'),
               SpriteAnimationData.sequenced(
                 amount: 1,
                 stepTime: 1,

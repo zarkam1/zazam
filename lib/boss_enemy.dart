@@ -51,7 +51,7 @@ class BossEnemy extends Enemy {
     try {
       // Load boss sprite (single image)
       animation = SpriteAnimation.fromFrameData(
-        await gameRef.images.load('boss_enemy.png'),
+        await gameRef.images.load('new/enemy_ship_4_neon_256.png'),
         SpriteAnimationData.sequenced(
           amount: 1,
           stepTime: 1,
